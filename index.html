@@ -24,6 +24,12 @@
             justify-content: center;
             -webkit-font-smoothing: antialiased;
             touch-action: pan-y; /* Permite scroll vertical, bloqueia horizontal nativo */
+            
+            /* Bloqueia seleção de texto para não atrapalhar o arrasto */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         /* --- Estrutura da Cena --- */
@@ -52,11 +58,14 @@
             right: 0;
             transform-origin: left center;
             transform-style: preserve-3d;
-            background-color: #FDFBF8;
+            background-color: #FDFBF8; /* Cor de fundo base */
             border-radius: 0 10px 10px 0;
             box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -2px 0 5px rgba(0,0,0,0.1);
             cursor: grab;
             will-change: transform;
+            /* Garante que a página seja visível */
+            visibility: visible !important; 
+            display: block !important;
         }
         
         .page.grabbing {
@@ -74,9 +83,12 @@
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden; /* Fix para Safari/iOS */
             padding: 40px;
-            overflow: hidden; /* O scroll é no .content-scroll */
+            overflow: hidden; 
+            background-color: #FDFBF8; /* Fundo sólido fallback */
             background-image: linear-gradient(to right, #e3dac9 0%, #FDFBF8 10%);
+            z-index: 2;
         }
 
         /* Verso da página */
@@ -88,6 +100,7 @@
             left: 0;
             transform: rotateY(180deg);
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             background-image: linear-gradient(to left, #e3dac9 0%, #FDFBF8 10%);
             border-radius: 10px 0 0 10px;
             display: flex;
@@ -95,6 +108,7 @@
             justify-content: center;
             background-color: #f7f3e8;
             pointer-events: none;
+            z-index: 1;
         }
 
         /* Sombra dinâmica */
@@ -173,27 +187,62 @@
             pointer-events: none;
         }
 
-        /* Botões de Navegação */
+        /* Botões de Navegação - Setas Singelas */
         .nav-btn {
             position: fixed;
-            bottom: 25px;
-            background: #7c2d12;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
+            top: 50%; /* Centralizado verticalmente por padrão (Desktop) */
+            transform: translateY(-50%);
+            background: transparent;
+            color: #7c2d12;
+            padding: 15px;
+            border-radius: 50%;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: transform 0.2s, background 0.2s;
             z-index: 200;
-            font-family: 'Inter', sans-serif;
-            font-weight: bold;
-            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.6; /* Leve transparência para ser sutil */
+            transition: all 0.2s ease;
         }
-        .nav-btn:active { transform: scale(0.95); }
-        .btn-prev { left: 20px; }
-        .btn-next { right: 20px; }
-        .btn-disabled { opacity: 0.3; cursor: default; background: #999; pointer-events: none; }
+
+        .nav-btn:hover { 
+            opacity: 1;
+            background: rgba(124, 45, 18, 0.05); /* Feedback sutil ao passar o mouse */
+            transform: translateY(-50%) scale(1.1); 
+        }
+        
+        .nav-btn:active { transform: translateY(-50%) scale(0.95); }
+
+        .btn-prev { left: 10px; }
+        .btn-next { right: 10px; }
+        
+        /* Desabilitado: some completamente para não atrapalhar */
+        .btn-disabled { opacity: 0; pointer-events: none; } 
+
+        /* Ajustes Mobile para as setas */
+        @media (max-width: 768px) {
+            .nav-btn {
+                top: auto;
+                bottom: 15px; /* No rodapé para fácil acesso */
+                transform: none; /* Reset transform */
+                opacity: 0.8;
+                padding: 10px;
+            }
+            
+            .nav-btn:hover {
+                transform: scale(1.1);
+                background: transparent;
+            }
+            
+            .nav-btn:active { transform: scale(0.9); }
+            
+            .btn-prev { left: 20px; }
+            .btn-next { right: 20px; }
+            
+            /* Seta um pouco maior para toque */
+            .nav-btn svg { width: 40px; height: 40px; filter: drop-shadow(0 1px 2px rgba(255,255,255,0.8)); }
+        }
 
         /* Indicador de progresso */
         .progress-bar {
@@ -205,16 +254,50 @@
             transition: width 0.3s;
             z-index: 300;
         }
+        
+        /* Botão de Download */
+        .btn-download {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 300;
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #7c2d12;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            border: 1px solid #e3dac9;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-download:hover {
+            transform: scale(1.1);
+            background-color: white;
+        }
+        .btn-download:active { transform: scale(0.95); }
+
     </style>
 </head>
 <body>
 
     <div id="progress" class="progress-bar" style="width: 0%"></div>
 
+    <!-- Botão de Download -->
+    <button class="btn-download" onclick="downloadBook()" title="Baixar para ver offline">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M12 12.75l-3-3m0 0l3-3m-3 3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.75V3" />
+        </svg>
+    </button>
+
     <!-- Instruções -->
-    <div class="fixed top-4 text-stone-600 text-xs md:text-sm font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow backdrop-blur-sm pointer-events-none select-none text-center">
+    <div class="fixed top-4 left-4 text-stone-600 text-xs md:text-sm font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow backdrop-blur-sm pointer-events-none select-none text-center">
         <span class="hidden md:inline">Arraste a folha para virar | Role o texto para ler</span>
-        <span class="md:hidden">Arraste para os lados para virar<br>Arraste para cima para ler o texto</span>
+        <span class="md:hidden">Arraste para os lados para virar<br>Arraste para cima para ler</span>
     </div>
 
     <!-- O Livro -->
@@ -224,9 +307,17 @@
         </div>
     </div>
 
-    <!-- Controles -->
-    <button id="btn-prev" class="nav-btn btn-prev btn-disabled" aria-label="Página anterior">❮ Anterior</button>
-    <button id="btn-next" class="nav-btn btn-next" aria-label="Próxima página">Próximo ❯</button>
+    <!-- Controles Singelos (Setas) -->
+    <button id="btn-prev" class="nav-btn btn-prev btn-disabled" aria-label="Página anterior">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 md:w-10 md:h-10">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+        </svg>
+    </button>
+    <button id="btn-next" class="nav-btn btn-next" aria-label="Próxima página">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 md:w-10 md:h-10">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+    </button>
 
     <script>
         const stories = [
@@ -256,7 +347,6 @@
         const bookContainer = document.getElementById('book');
         const progressBar = document.getElementById('progress');
         
-        // Estado do Drag e Scroll
         let isDragging = false;
         let isScrolling = false;
         let startX = 0;
@@ -275,12 +365,9 @@
                 // Z-Index reverso
                 page.style.zIndex = totalPages - index; 
 
-                // Visibilidade inicial otimizada
-                if (index > 1 && window.innerWidth < 768) {
-                    page.style.visibility = 'hidden';
-                }
+                // --- Correção: Removida a lógica de visibility: hidden ---
+                // Agora todas as páginas são renderizadas para evitar "buracos brancos"
 
-                // Conteúdo da Frente
                 let contentHTML = '';
                 let innerContent = '';
 
@@ -329,10 +416,7 @@
                 `;
 
                 page.innerHTML = contentHTML + backHTML;
-                
-                // Previne que a imagem fantasma do drag nativo do navegador apareça
                 page.addEventListener('dragstart', e => e.preventDefault());
-
                 bookContainer.appendChild(page);
             });
 
@@ -344,11 +428,23 @@
             const btnPrev = document.getElementById('btn-prev');
             const btnNext = document.getElementById('btn-next');
             const progress = (currentPage / (totalPages - 1)) * 100;
-
             progressBar.style.width = `${progress}%`;
-
             btnPrev.classList.toggle('btn-disabled', currentPage === 0);
             btnNext.classList.toggle('btn-disabled', currentPage >= totalPages - 1);
+        }
+
+        // Função de Download
+        function downloadBook() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'GecyMaria_Livro.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         function finishFlip(targetIndex) {
@@ -358,23 +454,12 @@
             for (let i = 0; i < totalPages; i++) {
                 const p = document.getElementById(`page-${i}`);
                 
-                // Remove estilos de drag manual
+                // Limpa estilos de drag
                 p.style.transform = '';
                 p.classList.remove('grabbing');
                 p.classList.add('page-transition'); 
 
-                // Lógica de Visibilidade para não pesar no celular
-                if (window.innerWidth < 768) {
-                    // Mantém visível a atual, a anterior e a próxima
-                    if (Math.abs(i - currentPage) <= 1) {
-                        p.style.visibility = 'visible';
-                        p.style.display = 'block';
-                    } else {
-                         p.style.visibility = 'hidden';
-                    }
-                }
-
-                // Estado Final: Virada ou Não
+                // Estado final
                 if (i < currentPage) {
                     p.style.transform = 'rotateY(-180deg)';
                     p.style.zIndex = i; 
@@ -383,7 +468,6 @@
                     p.style.zIndex = totalPages - i;
                 }
 
-                // Reseta sombra
                 const shadow = p.querySelector('.page-shadow');
                 if(shadow) shadow.style.opacity = '0';
             }
@@ -395,7 +479,6 @@
 
         function setupInteractiveDrag() {
             const scene = document.getElementById('scene-container');
-            
             const startEvents = ['mousedown', 'touchstart'];
             const moveEvents = ['mousemove', 'touchmove'];
             const endEvents = ['mouseup', 'touchend', 'mouseleave'];
@@ -403,7 +486,6 @@
             function getX(e) { return e.type.includes('mouse') ? e.pageX : e.touches[0].pageX; }
             function getY(e) { return e.type.includes('mouse') ? e.pageY : e.touches[0].pageY; }
 
-            // --- INÍCIO ---
             function onStart(e) {
                 if (e.target.closest('button')) return;
 
@@ -426,9 +508,7 @@
                 }
             }
 
-            // --- MOVIMENTO ---
             function onMove(e) {
-                // Se já decidiu que é scroll, deixa o navegador cuidar
                 if (isScrolling) return;
 
                 const x = getX(e);
@@ -436,26 +516,21 @@
                 const deltaX = x - startX;
                 const deltaY = y - startY;
 
-                // Decisão inicial: É Scroll ou é Drag?
                 if (!isDragging) {
-                    // Se moveu mais na vertical que na horizontal, é scroll
                     if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5) {
                         isScrolling = true;
-                        return; // Sai e deixa o scroll nativo acontecer
+                        return;
                     } 
-                    // Se moveu mais na horizontal, é virada de página
                     else if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
                         isDragging = true;
                         if (currentDragPage) currentDragPage.classList.add('grabbing');
                     } else {
-                        // Movimento muito pequeno ainda, não faz nada
                         return; 
                     }
                 }
 
-                // Se estamos arrastando a página
                 if (isDragging && currentDragPage) {
-                    if (e.cancelable) e.preventDefault(); // Bloqueia scroll enquanto vira página
+                    if (e.cancelable) e.preventDefault();
 
                     const screenW = window.innerWidth;
                     const bookW = screenW > 768 ? screenW / 2 : screenW;
@@ -464,12 +539,10 @@
                     let opacityShadow = 0;
 
                     if (currentDragDirection === 'next') {
-                        // De 0 a -180
                         const progress = Math.min(0, Math.max(-bookW, deltaX)) / bookW;
                         rotation = progress * 180;
                         opacityShadow = Math.abs(progress) * 0.5;
                     } else {
-                        // De -180 a 0
                         const progress = Math.min(bookW, Math.max(0, deltaX)) / bookW;
                         rotation = -180 + (progress * 180);
                         opacityShadow = (1 - progress) * 0.5;
@@ -482,7 +555,6 @@
                 }
             }
 
-            // --- FIM ---
             function onEnd(e) {
                 if (!isDragging) return;
                 isDragging = false;
@@ -497,17 +569,17 @@
                 let currentRot = rotationMatch ? parseFloat(rotationMatch[1]) : 0;
 
                 if (currentDragDirection === 'next') {
-                    if (currentRot < -30) { // Virou o suficiente
+                    if (currentRot < -30) {
                         finishFlip(currentPage + 1);
-                    } else { // Cancela
+                    } else {
                         currentDragPage.style.transform = 'rotateY(0deg)';
                         const shadow = currentDragPage.querySelector('.page-shadow');
                         if(shadow) shadow.style.opacity = '0';
                     }
                 } else {
-                    if (currentRot > -150) { // Voltou o suficiente
+                    if (currentRot > -150) {
                         finishFlip(currentPage - 1);
-                    } else { // Cancela
+                    } else {
                         currentDragPage.style.transform = 'rotateY(-180deg)';
                         const shadow = currentDragPage.querySelector('.page-shadow');
                         if(shadow) shadow.style.opacity = '0';
@@ -516,14 +588,13 @@
                 currentDragPage = null;
             }
 
-            // Passive false é crucial para permitir preventDefault no touchmove
             startEvents.forEach(evt => scene.addEventListener(evt, onStart, { passive: false }));
             moveEvents.forEach(evt => window.addEventListener(evt, onMove, { passive: false }));
             endEvents.forEach(evt => window.addEventListener(evt, onEnd));
         }
 
         function nextPage() {
-            if (currentPage < totalPages) finishFlip(currentPage + 1);
+            if (currentPage < totalPages - 1) finishFlip(currentPage + 1);
         }
         function prevPage() {
             if (currentPage > 0) finishFlip(currentPage - 1);
