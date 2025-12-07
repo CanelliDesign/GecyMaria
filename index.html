@@ -1,181 +1,384 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-ba">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gecy Maria: Autobiografia</title>
+    <title>Gecy Maria: O Livro da Vida</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Sertão Sereno -->
-    <!-- Application Structure Plan: The application is structured as an interactive digital book. Instead of a linear read, users can navigate stories through a main menu or thematic filters ('Sustos e Livramentos', 'Encontros e Lições', etc.). This thematic organization allows users to explore memories based on mood or interest, enhancing engagement with the narrative content. The primary interaction is filtering, which dynamically displays relevant story cards, transforming a static text into an explorable experience. This was chosen to add interactivity to a purely qualitative report, making the content more digestible and engaging than a simple long-scroll page. -->
-    <!-- Visualization & Content Choices: Report Info: Narrative stories from the book. Goal: Organize and present stories for easy exploration. Viz/Presentation Method: The stories are presented in styled "cards" using HTML/Tailwind. Interaction: Users can filter these cards by theme (e.g., 'Sustos', 'Lições') using buttons. Clicking a filter shows/hides cards. Justification: Since there's no quantitative data, traditional charts are not applicable. Thematic filtering is the chosen interactive method to allow users to engage with and organize the qualitative information. Library/Method: Vanilla JavaScript for DOM manipulation and event handling for the filtering and smooth-scrolling navigation. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    
     <style>
+        /* Configurações Globais */
         body {
             font-family: 'Lora', serif;
-            background-color: #FDFBF8;
-            color: #44403c;
+            background-color: #f0eadd; /* Cor de mesa de madeira ou fundo neutro */
+            background-image: radial-gradient(#d6cbb3 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden; /* Evita scroll na página principal, o scroll é dentro do livro */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        h1, h2, h3, button, nav {
+
+        /* O Palco 3D */
+        .scene {
+            width: 100%;
+            height: 85vh;
+            max-width: 1000px; /* Largura máxima do livro aberto */
+            perspective: 1500px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        /* O Livro */
+        .book {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+        }
+
+        /* As Páginas */
+        .page {
+            position: absolute;
+            width: 50%; /* Metade da largura para desktop (direita) */
+            height: 100%;
+            top: 0;
+            right: 0; /* Todas as páginas começam na direita */
+            transform-origin: left center; /* O eixo da virada é a esquerda (lombada) */
+            transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transform-style: preserve-3d;
+            background-color: #FDFBF8;
+            border-radius: 0 10px 10px 0;
+            box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -5px 0 10px rgba(0,0,0,0.1);
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        /* Conteúdo da Página */
+        .page-front, .page-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Esconde o verso quando virado */
+            padding: 40px;
+            overflow-y: auto; /* Permite rolar se o texto for longo */
+            background-image: linear-gradient(to right, #e3dac9 0%, #FDFBF8 10%); /* Sombra da lombada */
+        }
+
+        /* O Verso da Página (quando ela vira para a esquerda) */
+        .page-back {
+            transform: rotateY(180deg);
+            background-image: linear-gradient(to left, #e3dac9 0%, #FDFBF8 10%);
+            border-radius: 10px 0 0 10px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f7f3e8;
+        }
+
+        /* Estado: Página Virada */
+        .page.flipped {
+            transform: rotateY(-180deg);
+            z-index: 0; /* Vai para o fundo da pilha da esquerda */
+        }
+
+        /* Ajustes Mobile: Livro vira uma pilha simples */
+        @media (max-width: 768px) {
+            .scene {
+                max-width: 95%;
+                height: 80vh;
+            }
+            .page {
+                width: 100%; /* Largura total no mobile */
+                border-radius: 5px;
+            }
+            .page.flipped {
+                transform: rotateY(-180deg); /* Ainda vira, mas sai da tela praticamente */
+                opacity: 0; /* Esconde no mobile para não atrapalhar */
+            }
+            .page-front {
+                padding: 20px;
+            }
+        }
+
+        /* Estilização Específica do Conteúdo */
+        .capa {
+            background-color: #7c2d12; /* Cor de couro */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            border: 2px solid #551b08;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239c4221' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+        }
+
+        .title-fancy {
+            font-family: 'Great Vibes', cursive;
+        }
+
+        /* Scrollbar estilizada */
+        .page-front::-webkit-scrollbar {
+            width: 6px;
+        }
+        .page-front::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .page-front::-webkit-scrollbar-thumb {
+            background: #d6cbb3; 
+            border-radius: 3px;
+        }
+        .page-front::-webkit-scrollbar-thumb:hover {
+            background: #a89f8d; 
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
             font-family: 'Inter', sans-serif;
         }
-        .story-card {
-            transition: all 0.3s ease-in-out;
-            visibility: visible;
-            opacity: 1;
-            height: auto;
-            overflow: hidden;
-            margin-bottom: 2rem;
+
+        /* Botões de Navegação Flutuantes */
+        .nav-btn {
+            position: fixed;
+            bottom: 20px;
+            background: #7c2d12;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background 0.2s;
+            z-index: 100;
+            font-family: 'Inter', sans-serif;
+            font-weight: bold;
         }
-        .story-card.hidden-card {
-            opacity: 0;
-            visibility: hidden;
-            height: 0;
-            margin-bottom: 0;
-            transform: scale(0.95);
+        .nav-btn:hover {
+            background: #9a3412;
+            transform: scale(1.05);
         }
+        .btn-prev { left: 20px; }
+        .btn-next { right: 20px; }
+        .btn-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #ccc;
+        }
+
     </style>
 </head>
-<body class="bg-[#FDFBF8] text-stone-800">
+<body>
 
-    <header class="sticky top-0 z-10 bg-[#FDFBF8]/80 backdrop-blur-sm shadow-sm">
-        <div class="container mx-auto max-w-5xl px-4 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-orange-900">Meu Livro, Minha Vida</h1>
-            <nav id="main-nav">
-                <button id="nav-toggle" class="md:hidden p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-800">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
-                <ul id="nav-menu" class="hidden absolute md:relative top-16 left-0 md:top-0 md:left-auto bg-[#FDFBF8] md:bg-transparent w-full md:w-auto md:flex space-y-2 md:space-y-0 md:space-x-6 p-4 md:p-0 shadow-lg md:shadow-none rounded-b-lg">
-                </ul>
-            </nav>
+    <!-- Instruções no Topo -->
+    <div class="fixed top-4 text-stone-600 text-sm font-bold z-50 bg-white/80 px-4 py-1 rounded-full shadow backdrop-blur-sm">
+        <span class="hidden md:inline">Clique na borda da página ou use as setas para ler</span>
+        <span class="md:hidden">Toque nas setas abaixo para virar a página</span>
+    </div>
+
+    <!-- O Livro -->
+    <div class="scene">
+        <div class="book" id="book">
+            <!-- As páginas serão geradas via Javascript aqui -->
         </div>
-    </header>
+    </div>
 
-    <main class="container mx-auto max-w-4xl p-4 md:p-8">
-        <section id="intro" class="text-center mb-12">
-            <h2 class="text-4xl font-bold text-stone-700 mb-4">Recordações de uma Infância</h2>
-            <p class="text-lg text-stone-600 max-w-3xl mx-auto">
-                Esta é uma jornada interativa pelas memórias de uma vida simples e feliz no interior de Minas Gerais. Explore as histórias de fé, família e os pequenos milagres do cotidiano em Vale Verde. Use os filtros abaixo para navegar pelas lembranças.
-            </p>
-        </section>
-
-        <section id="filters" class="mb-12">
-            <h3 class="text-xl font-bold text-center text-stone-700 mb-4">Explorar por Tema</h3>
-            <div id="filter-buttons" class="flex flex-wrap justify-center gap-2 md:gap-4">
-            </div>
-        </section>
-
-        <div id="stories-container">
-        </div>
-    </main>
-
-    <footer class="bg-stone-100 mt-16 py-8">
-        <div class="container mx-auto max-w-4xl text-center text-stone-600">
-            <p>&copy; 2025 | Uma Visualização Interativa das Memórias</p>
-        </div>
-    </footer>
+    <!-- Controles Manuais -->
+    <button id="btn-prev" class="nav-btn btn-prev btn-disabled">❮ Anterior</button>
+    <button id="btn-next" class="nav-btn btn-next">Próximo ❯</button>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const stories = [
-                { id: 'historia', theme: 'inicio', title: 'Neste Pequeno Livro', content: `Neste pequeno livro, quero contar minha história. Tinha apenas quatro anos de idade quando comecei a me entender por gente. Meus pais moravam no interior, em um lindo lugar de Minas chamado Vale Verde. Éramos uma família que servíamos a Deus, e por isto, a gente era muito feliz.<br><br>Como é lindo lembrar daquele tempo de infância. Tudo era pureza e maravilha em volta de mim. Não tínhamos maldade, nem malícia, nem curiosidade pecaminosa.<br><br>Meus pais moravam num ranchinho de barro coberto de sapé, com lindas plantas em volta da casinha. Éramos uma família muito feliz. Dos cinco filhos de minha mãe, eu era a segunda. Tinha cinco anos de idade e gostava muito de adorar ao Senhor Jesus.<br><br>Nos fundos de minha casinha humilde, existia um pequeno riozinho muito lindo, com belas paisagens. Alamandas subiam por cima dos pés de ingás, abrindo suas lindas flores amarelas refletidas nas claras águas do riacho. Então eu me punha a meditar nas maravilhas do Senhor.<br><br>Gostava muito das historinhas da Bíblia, principalmente de Davi. Mamãe e papai faziam um cultinho com a família todas as manhãs. Cantávamos lindos corinhos, falávamos o texto áureo de cor e recitávamos o Salmo 23 e outros textos. Nós éramos muito obedientes aos nossos pais e ao Senhor Jesus, por isto éramos felizes.<br><br>Aos domingos, nossa mãe e nosso pai nos levavam à Escola Dominical numa igrejinha à beira da estrada. Ela era muito linda porque o Senhor Jesus estava lá para nos ensinar a amá-lo, e também a amar a mamãe, o papai, os amigos e até os inimigos. Aprendíamos lindos corinhos com a nossa professora, tia Dulce.` },
-                { id: 'susto', theme: 'sustos', title: 'Um Grande Susto', content: `Um dia, nosso pai saiu para trabalhar numa mata no alto de uma serra ou montanha. Enquanto isto, mamãe cuidava da casa, e nós brincávamos despreocupadamente, em meio a tanta inocência e pureza. Quando, de repente, escutamos todas as galinhas se espantarem e gritar, ficamos com muito medo. Então, mamãe veio correndo e viu uma enorme cobra que media três metros de comprimento.<br><br>Nós corremos para junto de mamãe, agarramos em seus vestidos e começamos a orar, pedindo ao Papai do Céu que nos livrasse daquela grande cobra. Foi então que Deus trouxe o nosso pai. Ele nos acalmou e nos protegeu, porque Deus estava conosco. Assim, papai matou aquela cobra, e nós voltamos a brincar.` },
-                { id: 'cura', theme: 'sustos', title: 'O Irmão Curado', content: `Meu irmão mais novo tinha quatro anos. Um dia, ele estava brincando debaixo de um fogão de lenha, quando de repente, ele caiu para trás. Mamãe, quando o viu, achou que he estava dormindo, mas quando olhou direito, viu que ele estava desmaiado. Então, mamãe começou a gritar e a chamar meu pai, que estava no alto da montanha. Meu pai escutou e desceu correndo. Chegando em casa, pegou meu irmãozinho, olhou para o céu, orou a Deus, fez um voto, e Jesus o curou. E todos nós ficamos muito alegres. E nunca mais meu irmão ficou doente.` },
-                { id: 'saudade', theme: 'inicio', title: 'Saudade de Minha Infância', content: `Era muito linda a vida no sertão. Certo dia, minha mãe saiu para fazer compras, chamou seus dois filhos mais velhos e disse: "Olha, não quero que vocês brinquem de polícia e ladrão, nem com fogo, nem de pular a janela, porque o Senhor Jesus fica triste, e o anjinho também". Mas nós não obedecemos à mamãe e brincamos com aquela brincadeira proibida. Quando mamãe chegou, nós levamos um susto muito grande. Sabe por quê? Porque mamãe nos batia com vara de guanxuma, e ela doía muito.<br><br>Então, nós pulamos a janela e saímos correndo no meio do matagal. Corremos, corremos, muito, muito, muito, até chegar à beira do rio.` },
-                { id: 'rio', theme: 'sustos', title: 'Um Rio de Muitas Recordações', content: `Cansados de correr da mamãe, paramos à beira desse rio. Sentamos no chão para descansar nossas pernas. Enquanto isto, começamos a refletir sobre tudo o que tínhamos feito de errado e começamos a chorar. Fizemos uma oração, pedimos perdão ao Senhor Jesus. Sentadas no chão, duas inocentes crianças esperavam que alguém pudesse nos encontrar e nos trouxesse de volta para casa.<br><br>Era uma hora da tarde e começamos a ficar com muita fome. Pensávamos em voltar para casa, mas tínhamos medo de mamãe nos bater.<br><br>Às margens do rio havia um lindo pé de jenipapo com muitos frutos. Então eu disse para meu irmão: "Vamos apanhar jenipapos para nós comermos?". O meu irmão me retrucou: "Como apanharemos? A árvore é muito alta e nós somos pequeninos". Então, começamos a atirar pedras na árvore e os frutos começaram a cair. Pegamos os jenipapos, começamos a comer e bebemos água do rio.<br><br>De repente, um susto! Em meio à quebra do silêncio que fazia naquela tarde no meio do mato, surgiu algo muito estranho. "Ai meu Deus, o que será isto? O que é que está acontecendo? Tenha dó de nós, Senhor Jesus, nos livra!". Ficamos a olhar. Parecia que o vento derrubava o mato em cima de nós. Continuamos a olhar e vimos uma enorme cobra que media três metros de comprimento. Nós ficamos parados diante daquele monstro. Naquele momento, nós só pensamos no Senhor Jesus. Ele mandou seus anjos para nos proteger.<br><br>Assim como Davi matou o gigante Golias, Ele também nos deu força. Eu, com apenas seis anos, e meu irmão, sete anos, começamos a atirar pedras naquela cobra, assim como Davi atirou em Golias. E nós matamos aquela cobra com toda a nossa força. Depois, ficamos sentados ao lado dela, pensando o que fazer.<br><br>Começamos a pensar como iríamos voltar para casa. "Será que mamãe ainda iria nos bater? Será que ela tinha esquecido tudo? Será que ela iria nos perdoar?".<br><br>Foi então que, na nossa astúcia, pensamos em surpreender mamãe, levando aquela cobra como troféu da nossa vitória. Pois pensávamos assim: "Quando mamãe nos ver com esta cobra, ela vai ficar impressionada com o livramento que o Senhor nos deu, que ela nem vai lembrar de nos bater".<br><br>Então, pusemos o nosso plano em prática. Pegamos cipó no mato, amarramos na cabeça da cobra e começamos a puxar aquela cobra pelas campinas verdejantes. E assim fomos, até chegar perto do terreiro da nossa casa. Quando avistamos mamãe, nós paramos e começamos a chorar. Mamãe nos viu de longe e viu que estávamos puxando alguma coisa.<br><br>Foi então que ela chamou nosso pai e disse: "Eliezer, as crianças vêm vindo pelo campo, puxando alguma coisa esquisita. O que será aquilo?". Eliezer respondeu: "Não sei, mas vamos encontrar com elas pra ver o que é".<br><br>Assim, eles foram ao nosso encontro. Quando eles se aproximaram de nós e viram aquela enorme cobra, ficaram muito assustados. E, ao invés de nos bater, eles nos abraçaram, choraram e agradeceram a Jesus por ter nos dado tão grande livramento. Em seguida, nos levaram para dentro de casa, leram a Bíblia conosco, nos aconselharam e fizemos uma oração, agradecendo a Deus por tão grande livramento.<br><br>Aí, nós pedimos perdão à mamãe e ao papai e prometemos nunca mais brincar de polícia e ladrão. Pois a nossa brincadeira de criança tem que ser santa. Podemos brincar imitando Davi, Samuel, Sansão, Moisés e o menino Jesus quando tinha 12 anos e ensinava os doutores da Lei.` },
-                { id: 'cachorro', theme: 'sustos', title: 'O Cachorro Amarelo', content: `Numa noite de lua muito clara, Eliezer e Zima foram caçar tatu e deixaram seus quatro filhos dormindo, todos num só quarto. Quando, de repente, apareceu dentro do quarto, no meio das crianças, um enorme cachorro amarelo. Ele tinha olhos vermelhos, dentões e um linguão vermelho. Quando as crianças o viram, todos começaram a gritar. Gritaram, gritaram, gritaram muito, mas aquele cachorro não saía do meio das crianças. Foi então que Eliezer e Zima escutaram os gritos das crianças e voltaram correndo para casa.<br><br>Eliezer pegou um machado, arrebentou a porta e deu um forte grito, e disse: "O que é isto, meninos?". Foi então que o cachorro desapareceu. Papai e mamãe nos abraçaram, oraram por nós e nós dormimos em paz, meditando no Salmo de número quatro, verso oito. E nunca mais nós vimos aquele cachorrão.` },
-                { id: 'argentino', theme: 'licoes', title: 'O Menino Argentino', content: `Há muito tempo, morávamos num lindo lugar de nome **Vala Verde**. Neste lugar, havia lindos pomares de frutas, lagoas com muitas taboas e lindas saracuras. Gostávamos de correr atrás delas, só não conseguíamos pegá-las porque elas eram muito rápidas.<br><br>Foi então que ouvimos alguém passando na empoeirada estradinha. Aí, nós corremos para a beira da estrada para ver quem era. Foi então que vimos um menino sujo e maltrapilho. Ele se assustou conosco, e também nos assustamos com ele. Ficamos parados sem falar um com o outro, porque éramos muito tímidos, mas isso é próprio de crianças da roça. De repente, quebramos o silêncio e perguntamos: "Quem é você?".<br><br>E ele respondeu: "Eu não vou falar meu nome. Sou argentino, tenho onze anos e estou com fome".<br><br>"Vocês moram aqui?"<br><br>"Sim, moramos. Meu nome é Jaidi, minha irmã é Deey, minha mãe é Zima. Vamos para minha casa. Minha mãe é boazinha, ela vai te dar comida, café, biscoitos e muitas coisas boas".<br><br>Quando o argentino chegou lá em casa, nossa mãe ficou assustada e perguntou a nós: "Que menino é esse, Jaidinho?". Nós dissemos para a mamãe que ele se chamava Argentino e não sabia falar bem a nossa língua. Então, mamãe colocou água para esquentar, colocou a água na bacia e mandou que ele tomasse um banho. Depois, mamãe deu café com leite, batata doce assada, e biscoito na mesa, e chamou-o para comer. Nós nos sentamos à mesa junto com ele. Queríamos que ele falasse alguma coisa, mas ele ficava calado.<br><br>Foi então que mamãe perguntou a ele: "Por que é que você veio da Argentina sozinho? Quem são seus pais?". Ele não respondia nada, só ficava calado. De repente, aquele menino disse para minha mãe, com a voz um pouco enrolada: "Olha, tia, eu não tenho mãe. Quando ela morreu, eu era bebê. Meu pai me criou com a minha tia. Meu pai era muito mau, me batia muito e me castigava. Eu tinha que lavar as vasilhas todas sozinho, limpar o quintal. Eu não suportava mais aquela vida. Foi então que, um dia, depois que meu pai me bateu muito, ele foi dormir. De repente, eu senti uma raiva muito grande do meu pai, peguei um porrete e dei três golpes na cabeça dele. Aí eu saí correndo, porque fiquei com muito medo e arrependido. Eu não queria machucar meu pai. Estou muito triste. Tenho andado em vários lugares, mas as pessoas têm medo de mim. Eu não sou um menino mau, preciso de uma família para mim".<br><br>Então, minha mãe disse para ele que Jesus era o melhor amigo das crianças e que Ele iria cuidar dele.` },
-                { id: 'acao', theme: 'licoes', title: 'Uma Boa Ação', content: `Então, mamãe pegou uma sacola, colocou roupas limpas e comida para ele levar na viagem. Também disse para ele: "Se você quiser, pode ficar aqui. Nós vamos para a igreja adorar ao Senhor Jesus. Se você for, Ele vai tirar a tristeza do seu coração e te fazer feliz. Também vai perdoar os teus pecados e te levar para o céu quando Ele voltar".<br><br>Aquela criança preferiu seguir viagem e foi embora. Mas nós fizemos uma boa ação.` },
-                { id: 'anjo', theme: 'licoes', title: 'O Anjo Voando no Céu', content: `A história do anjo foi assim. Era dezembro e estava chovendo muito. Os campos estavam todos floridos, e os rios e lagoas, todos cheios. O pomar de frutas do vovô parecia um paraíso na Terra.<br><br>Amanheceu na fazenda, e o sol fazia reluzir seus raios, que entravam pelas frestas das portas e janelas. Mamãe já havia se levantado para fazer o café, tirar o leite das vacas e assar bolos e biscoitos. Enquanto isto, as crianças dormiam como anjos. Depois de tudo pronto, mamãe nos acordava para o café da manhã. Mas antes do café, mamãe nos alimentava com o Pão do Céu. Ah, vocês ficaram curiosos com o Pão do Céu? Vou contar-lhes o que é o Pão do Céu.<br><br>O Pão do Céu era um culto doméstico que mamãe fazia todas as manhãs com as crianças. Mariazinha, Zezinho, Florim, todos nós nos sentávamos em volta de uma mesa muito grande. Em cima da mesa, tinha café com leite, queijo, broa de fubá, biscoito de polvilho e broa. Mamãe pegava a Bíblia, lia ela para nós ouvirmos, depois explicava tudo o que ela leu, e nós ficávamos quietinhos, ouvindo mamãe. Depois, nós cantávamos lindos corinhos em louvor ao nome do Senhor.<br><br>Num destes cultos domésticos, mamãe ensinou sobre a volta de Jesus, e Mariazinha prestou muita atenção no que mamãe ensinava e ficou meditando naquele momento tão lindo. Depois, mamãe terminou o cultinho, nós tomamos o café e fomos brincar.<br><br>De repente, Mariazinha olha para o céu e vê um anjo muito lindo que passou pelo meio do céu tocando uma linda trombeta de ouro. Ela saiu correndo, chamando a mãe, e contou para ela. Mamãe ficou feliz e disse: "Quando Jesus voltar, este anjo vai vir com Ele e vai nos levar para o céu". Peça para a mamãe fazer o culto doméstico.` },
-                { id: 'fragmentos', theme: 'final', title: 'Fragmentos', content: `<strong>Pedro Rita:</strong> Pedro Rita era um homem muito bom. Morava numa fazenda à beira da estrada. Tinha muitas moças; elas gostavam de lavar roupas no rio e também de tomar banho.<br><br><strong>A Menina da Porteira:</strong> À beira da estrada empoeirada, havia uma vendinha. Ali morava uma família muito especial. Sabe por quê? Porque todos serviam ao Senhor Jesus. Nesta família, tinha uma menina por nome Maria. Tinha apenas 6 anos e gostava muito de ver a boiada passar na estrada.` },
-                { id: 'poemas', theme: 'final', title: 'Poemas e Canções', content: `<blockquote class="border-l-4 border-orange-800/50 pl-4 italic text-stone-600 mb-6">Planos que, embora fossem um sonho, se perderam.<br>Luto do que era certo, agora morreu.<br>Algemado por um peso, oh, quão triste eu andei,<br>Até sentir a mão de Cristo,<br>Não sou mais quem era, eu sei.<br>Tocou-me, Jesus, tocou-me,<br>De paz Ele encheu meu coração.<br>Quando o Senhor Jesus me tocou,<br>Livrou-me da escuridão.<br>Desde que aceitei a Cristo<br>E senti seu terno amor,<br>Tenho achado paz e vida,<br>Para sempre cantarei em Seu louvor.</blockquote><blockquote>Está escrito no Livro Santo:<br>"Ama teu próximo de coração."<br>Um certo dia, Cristo, olhando a multidão,<br>movido pelo amor, multiplicou o pão.<br>Queria que os homens vissem o sinal<br>de um Deus que tem poder real. Depois daqueles dias, muitos O deixaram, não era o pão do céu, nem era o Seu amor que os fazia estar seguindo aquela luz. Deixaram logo então Jesus.<br><br>Onde está Jesus? Onde opera a Sua mão? Muitos O seguem só na grande multidão, num templo conhecido ou na forma de louvar. São medidas que o homem dá. É hora de saber qual a sua posição, seguindo a Jesus, qual a maior motivação? Dinheiro, posição, talvez se o "eu" predominar, quem sabe a multidão se vá.</blockquote>` }
-            ];
+        const stories = [
+            { id: 'capa', type: 'cover', title: 'Minha Vida', content: '' },
+            { id: 'indice', type: 'index', title: 'Índice', content: '' },
+            { id: 'intro', theme: 'inicio', title: 'Neste Pequeno Livro', content: `Neste pequeno livro, quero contar minha história. Tinha apenas quatro anos de idade quando comecei a me entender por gente. Meus pais moravam no interior, em um lindo lugar de Minas chamado Vale Verde. Éramos uma família que servíamos a Deus, e por isto, a gente era muito feliz.<br><br>Como é lindo lembrar daquele tempo de infância. Tudo era pureza e maravilha em volta de mim. Não tínhamos maldade, nem malícia, nem curiosidade pecaminosa.<br><br>Meus pais moravam num ranchinho de barro coberto de sapé, com lindas plantas em volta da casinha. Éramos uma família muito feliz. Dos cinco filhos de minha mãe, eu era a segunda. Tinha cinco anos de idade e gostava muito de adorar ao Senhor Jesus.<br><br>Nos fundos de minha casinha humilde, existia um pequeno riozinho muito lindo, com belas paisagens. Alamandas subiam por cima dos pés de ingás, abrindo suas lindas flores amarelas refletidas nas claras águas do riacho. Então eu me punha a meditar nas maravilhas do Senhor.<br><br>Gostava muito das historinhas da Bíblia, principalmente de Davi. Mamãe e papai faziam um cultinho com a família todas as manhãs. Cantávamos lindos corinhos, falávamos o texto áureo de cor e recitávamos o Salmo 23 e outros textos. Nós éramos muito obedientes aos nossos pais e ao Senhor Jesus, por isto éramos felizes.<br><br>Aos domingos, nossa mãe e nosso pai nos levavam à Escola Dominical numa igrejinha à beira da estrada. Ela era muito linda porque o Senhor Jesus estava lá para nos ensinar a amá-lo, e também a amar a mamãe, o papai, os amigos e até os inimigos. Aprendíamos lindos corinhos com a nossa professora, tia Dulce.` },
+            { id: 'passaros', theme: 'inicio', title: 'O Canto dos Pássaros e a Poeira da Estrada', content: `Foi por volta de 1961 que aconteceu este fato. Minha família era constituída de oito pessoas: meu irmão mais velho, de 10 anos; minha irmãzinha caçula, de 2 anos de vida; e minha querida mãe, que estava prestes a dar à luz o sétimo filho.<br><br>O cantinho onde morávamos era super aconchegante! Muito verde, muitas águas cristalinas, muitas estradas empoeiradas... Características do sertão da nossa querida Minas Gerais. Também não posso deixar de fazer menção aos lindos pássaros a cantar entre as lindas e imponentes árvores que rodeavam a nossa humilde casa. Havia pássaros voantes, como havia muitos pássaros andantes. Todos, em sintonia, formavam um lindo coral! Uma orquestra sem instrumentos cujo regente era o Criador de todas as coisas.<br><br>Mas os encantos não paravam por aí. Nossa querida mãe, que ainda vive, gostava muito de nos levar à casa de nossas tias para passear. Oh, como era agradável! Andávamos muitos quilômetros a pé, pois não existiam meios de transportes como há nas grandes e pequenas cidades. Mas, para nós, o andar a pé era o nosso lazer, pois íamos pelas empoeiradas estradas brincando de esconder.<br><br>Nada naquele lindo e simples lugar nos oferecia perigo; vivíamos uma vida da mais pura inocência. De vez em quando, passava por nós na estrada um carro de boi. Sei que existem muitas pessoas que não sabem o que é um carro de boi... Um carro de boi é uma carroça gigante puxada por bois, o meio de transporte do interior dos estados do Brasil. A nossa alegria e euforia era quando ouvíamos o cantar das rodas desse carro em meio à poeira a voar para cima. Tudo era pura diversão.<br><br>Assim caminhávamos pelas empoeiradas estradas do nosso sertão! À beira da estrada, lindas flores campestres pareciam dar-nos boas-vindas! Suas fragrâncias enchiam o ar de puro amor. Chegando na casa de nossa tia, tudo o que queríamos era descansar, mas para isso acontecer, tínhamos que lavar os pés. Depois, tomar aquele café com leite e comer broa de fubá com manteiga produzida na fazenda da nossa tia. Oh, o quanto isso era lindo e divertido! Tenho muitas saudades daqueles tempos! Embora eu saiba que eles não voltam mais, dá-me a impressão de que eu ainda os vivo.` },
+            { id: 'susto', theme: 'sustos', title: 'Um Grande Susto', content: `Um dia, nosso pai saiu para trabalhar numa mata no alto de uma serra ou montanha. Enquanto isto, mamãe cuidava da casa, e nós brincávamos despreocupadamente, em meio a tanta inocência e pureza. Quando, de repente, escutamos todas as galinhas se espantarem e gritar, ficamos com muito medo. Então, mamãe veio correndo e viu uma enorme cobra que media três metros de comprimento.<br><br>Nós corremos para junto de mamãe, agarramos em seus vestidos e começamos a orar, pedindo ao Papai do Céu que nos livrasse daquela grande cobra. Foi então que Deus trouxe o nosso pai. Ele nos acalmou e nos protegeu, porque Deus estava conosco. Assim, papai matou aquela cobra, e nós voltamos a brincar.` },
+            { id: 'cura', theme: 'sustos', title: 'O Irmão Curado', content: `Meu irmão mais novo tinha quatro anos. Um dia, ele estava brincando debaixo de um fogão de lenha, quando de repente, ele caiu para trás. Mamãe, quando o viu, achou que he estava dormindo, mas quando olhou direito, viu que ele estava desmaiado. Então, mamãe começou a gritar e a chamar meu pai, que estava no alto da montanha. Meu pai escutou e desceu correndo. Chegando em casa, pegou meu irmãozinho, olhou para o céu, orou a Deus, fez um voto, e Jesus o curou. E todos nós ficamos muito alegres. E nunca mais meu irmão ficou doente.` },
+            { id: 'saudade', theme: 'inicio', title: 'Saudade de Minha Infância', content: `Era muito linda a vida no sertão. Certo dia, minha mãe saiu para fazer compras, chamou seus dois filhos mais velhos e disse: "Olha, não quero que vocês brinquem de polícia e ladrão, nem com fogo, nem de pular a janela, porque o Senhor Jesus fica triste, e o anjinho também". Mas nós não obedecemos à mamãe e brincamos com aquela brincadeira proibida. Quando mamãe chegou, nós levamos um susto muito grande. Sabe por quê? Porque mamãe nos batia com vara de guanxuma, e ela doía muito.<br><br>Então, nós pulamos a janela e saímos correndo no meio do matagal. Corremos, corremos, muito, muito, muito, até chegar à beira do rio.` },
+            { id: 'rio', theme: 'sustos', title: 'Um Rio de Muitas Recordações', content: `Cansados de correr da mamãe, paramos à beira desse rio. Sentamos no chão para descansar nossas pernas. Enquanto isto, começamos a refletir sobre tudo o que tínhamos feito de errado e começamos a chorar. Fizemos uma oração, pedimos perdão ao Senhor Jesus. Sentadas no chão, duas inocentes crianças esperavam que alguém pudesse nos encontrar e nos trouxesse de volta para casa.<br><br>Era uma hora da tarde e começamos a ficar com muita fome. Pensávamos em voltar para casa, mas tínhamos medo de mamãe nos bater.<br><br>Às margens do rio havia um lindo pé de jenipapo com muitos frutos. Então eu disse para meu irmão: "Vamos apanhar jenipapos para nós comermos?". O meu irmão me retrucou: "Como apanharemos? A árvore é muito alta e nós somos pequeninos". Então, começamos a atirar pedras na árvore e os frutos começaram a cair. Pegamos os jenipapos, começamos a comer e bebemos água do rio.<br><br>De repente, um susto! Em meio à quebra do silêncio que fazia naquela tarde no meio do mato, surgiu algo muito estranho. "Ai meu Deus, o que será isto? O que é que está acontecendo? Tenha dó de nós, Senhor Jesus, nos livra!". Ficamos a olhar. Parecia que o vento derrubava o mato em cima de nós. Continuamos a olhar e vimos uma enorme cobra que media três metros de comprimento. Nós ficamos parados diante daquele monstro. Naquele momento, nós só pensamos no Senhor Jesus. Ele mandou seus anjos para nos proteger.<br><br>Assim como Davi matou o gigante Golias, Ele também nos deu força. Eu, com apenas seis anos, e meu irmão, sete anos, começamos a atirar pedras naquela cobra, assim como Davi atirou em Golias. E nós matamos aquela cobra com toda a nossa força. Depois, ficamos sentados ao lado dela, pensando o que fazer.<br><br>Começamos a pensar como iríamos voltar para casa. "Será que mamãe ainda iria nos bater? Será que ela tinha esquecido tudo? Será que ela iria nos perdoar?".<br><br>Foi então que, na nossa astúcia, pensamos em surpreender mamãe, levando aquela cobra como troféu da nossa vitória. Pois pensávamos assim: "Quando mamãe nos ver com esta cobra, ela vai ficar impressionada com o livramento que o Senhor nos deu, que ela nem vai lembrar de nos bater".<br><br>Então, pusemos o nosso plano em prática. Pegamos cipó no mato, amarramos na cabeça da cobra e começamos a puxar aquela cobra pelas campinas verdejantes. E assim fomos, até chegar perto do terreiro da nossa casa. Quando avistamos mamãe, nós paramos e começamos a chorar. Mamãe nos viu de longe e viu que estávamos puxando alguma coisa.<br><br>Foi então que ela chamou nosso pai e disse: "Eliezer, as crianças vêm vindo pelo campo, puxando alguma coisa esquisita. O que será aquilo?". Eliezer respondeu: "Não sei, mas vamos encontrar com elas pra ver o que é".<br><br>Assim, eles foram ao nosso encontro. Quando eles se aproximaram de nós e viram aquela enorme cobra, ficaram muito assustados. E, ao invés de nos bater, eles nos abraçaram, choraram e agradeceram a Jesus por ter nos dado tão grande livramento. Em seguida, nos levaram para dentro de casa, leram a Bíblia conosco, nos aconselharam e fizemos uma oração, agradecendo a Deus por tão grande livramento.<br><br>Aí, nós pedimos perdão à mamãe e ao papai e prometemos nunca mais brincar de polícia e ladrão. Pois a nossa brincadeira de criança tem que ser santa. Podemos brincar imitando Davi, Samuel, Sansão, Moisés e o menino Jesus quando tinha 12 anos e ensinava os doutores da Lei.` },
+            { id: 'cachorro', theme: 'sustos', title: 'O Cachorro Amarelo', content: `Numa noite de lua muito clara, Eliezer e Zima foram caçar tatu e deixaram seus quatro filhos dormindo, todos num só quarto. Quando, de repente, apareceu dentro do quarto, no meio das crianças, um enorme cachorro amarelo. Ele tinha olhos vermelhos, dentões e um linguão vermelho. Quando as crianças o viram, todos começaram a gritar. Gritaram, gritaram, gritaram muito, mas aquele cachorro não saía do meio das crianças. Foi então que Eliezer e Zima escutaram os gritos das crianças e voltaram correndo para casa.<br><br>Eliezer pegou um machado, arrebentou a porta e deu um forte grito, e disse: "O que é isto, meninos?". Foi então que o cachorro desapareceu. Papai e mamãe nos abraçaram, oraram por nós e nós dormimos em paz, meditando no Salmo de número quatro, verso oito. E nunca mais nós vimos aquele cachorrão.` },
+            { id: 'fogo', theme: 'sustos', title: 'O Fogo e a Marca', content: `Voltamos do passeio da casa da tia e a vida de roça seguiu. Aos 6 anos, não tínhamos muito tempo para brincar. Meu pai ensinou-nos a capinar o solo para retirar os matos e ervas daninhas do meio do feijão e do milho, e minha mãe me ensinou a cozinhar. Assim, nossa infância foi, em parte, vendida ao trabalho pesado.<br><br>Um dia, minha mãe me mandou fazer o almoço para ela. Eu tinha apenas 7 anos de vida, então obedeci e comecei a fazer. Quando fui preparar o feijão, algo muito triste aconteceu. As panelas da roça são de ferro e esquentam muito! Eu deixei aquela panela esquentar demais. Foi então que coloquei a gordura e, logo após, o alho. Aquela gordura entrou em combustão. Quando joguei o feijão, subiu um alto fogo da panela, e aquela gordura misturada com fogo caiu toda no meu braço esquerdo, abrindo assim três grandes brechas.<br><br>Gritei desesperadamente! Minha mãe também gritava, mas não tínhamos muito o que fazer. O lugar era um sertão bravo, não tínhamos nem um comprimido para aliviar a dor. Minha mãe colocou sabonete e picumã — picumã é um resíduo de fumaça misturada com gordura que acumula no telhado, por cima do fogão a lenha. Meu braço foi enrolado na folha de bananeira. Sofri muito.` },
+            { id: 'adeus', theme: 'licoes', title: 'Adeus ao "Matão Bravo"', content: `Minha querida mãe cuidava de minhas feridas causadas pelas queimaduras. A dor era insuportável, mas minha mãe estava sempre ao meu lado nesses difíceis momentos. Foi então que minha querida e adorável tia foi passear na nossa casa. Ela não sabia que eu estava acidentada, pois naquele lugar, naquela época, não existia comunicação como nos dias atuais. O sistema era quase medieval: as mensagens eram levadas por correios ou por amigos de extrema confiança.<br><br>Quando ela me viu deitada na cama, assustou-se muito e ficou imensamente triste. Disse então para minha mãe e meu pai:<br>— Vou levar essa menina, minha sobrinha, para a cidade grande. Ela não pode continuar aqui desse jeito que está.<br><br>Meu pai e minha mãe relutavam, não querendo abrir mão de mim para ir fazer o tratamento em Governador Valadares. Enfim, minha tia conseguiu convencê-los. Fomos fazer os preparativos para a viagem. Foi a primeira vez que eu, uma criança de 7 anos, saía do matão bravo com direção a uma cidade grande! Dei adeus ao grotão onde morávamos, dei adeus à minha querida mãezinha, com muitas lágrimas e choro.<br><br>Assim partimos, eu e minha querida tia. E lá fomos nós, naquela empoeirada estrada de terra do meu querido, sofrido e imenso sertão do interior de Minas Gerais. Depois de andarmos três quilômetros, chegamos no estradão de terra onde passava um único ônibus por dia. Chamávamos aquela condução de "auto", porque éramos acostumados com carroças. Aquela condução nos transportou até uma cidade chamada Resplendor. Para mim era pura diversão, pois nunca tinha entrado em uma coisa daquelas; parecia uma casa com rodas!` },
+            { id: 'resplendor', theme: 'licoes', title: 'As Águas de Resplendor e o Trem de Ferro', content: `A viagem durou duas horas até chegarmos a uma linda cidade chamada Resplendor — o seu nome já diz tudo: a beleza de Resplendor!<br><br>Nessa linda cidade vi muitas coisas maravilhosas. Eu era uma menina sertaneja de apenas 7 anos, mas muito observadora, apesar de ser retraída e gostar de privacidade. O encanto que me tirou o fôlego foi contemplar o grande Rio Doce, de águas cristalinas, que divide aquela cidade em duas partes. Nunca eu tinha visto um rio grande assim! O mais legal foi atravessar aquele rio numa embarcação chamada canoa, pois nem em sonho pensava eu que existia tal embarcação. Do outro lado ficava o hotel onde iríamos passar a noite, pois no dia seguinte, ao amanhecer, seguiríamos viagem rumo a Governador Valadares.<br><br>Assim que o dia raiou, levantamos. O que contemplei me tirou o fôlego! Do terceiro andar daquele hotel, vi os raios de sol refletirem sobre as águas claras do Rio Doce. Não era um sonho, não era uma ilusão, eu estava vivendo no sentido físico tudo aquilo.<br><br>Então a tia me disse:<br>— Vamos tomar um cafezinho antes de partir.<br><br>Assentamos à mesa e tomamos aquele café com leite de Resplendor. Isso para mim não tinha preço, pois foi a primeira vez na vida que tal coisa acontecia. Acabando de tomar o café, pegamos nossas malas e saímos em direção à plataforma de embarque. Entramos no barco e voltamos para a outra banda do Rio Doce. Aquelas águas claras e lindas de se ver nunca saíram da minha mente.<br><br>Demos um "até breve" a Resplendor. Então, surge outro meio de transporte chamado trem! Nunca tinha visto isso antes na minha vida, quanto mais viajar numa coisa dessas. Foi então que o tal do trem chegou. Deu um apito forte! Levei um susto grande, segurei no vestido da tia, arregalei os olhos e tremi de medo.<br>A tia disse:<br>— Não precisa ficar com medo! O trem faz essas coisas mesmo, mas não machuca ninguém.<br><br>Entramos no trem e nos assentamos. Era muita gente, e eu não tinha costume de ficar em meio a tanta gente; era muito tímida e retraída. Então abaixei minha cabeça e só a levantei quando chegamos a Governador Valadares.` },
+            { id: 'cidade', theme: 'licoes', title: 'Luzes e Sombras da Cidade Grande', content: `Ao chegarmos naquela cidade, desembarcamos do trem olhando sempre para trás. Fiquei com muito medo, pois era a primeira vez que via um montão de gente assim; isso me apavorou de verdade. Minha tia dizia:<br>— Minha filha, não fique olhando para trás, as pessoas vão pensar que você é uma menina da roça.<br><br>Mas eu era uma criança sertaneja, isso ninguém podia negar! Fomos andando pelas ruas daquela linda cidade de Governador Valadares. Meu bracinho acidentado estava envolto em um pano branco com sumo de assa-peixe (uma planta anti-inflamatória usada na roça onde não há recursos médicos). O poder dessa planta é muito eficaz, mas o tratamento da queimadura ali precisava ser diferenciado. Aquele pano com o sumo havia agarrado todo em meu machucado. Tia passou comigo em uma farmácia para fazer a limpeza e o curativo. Foi um grito de morte! Como doeu! Tia teve que me segurar bem firme. Oh, o quanto eu sofri!<br><br>Compensando o sofrimento, saímos da farmácia e fomos a um restaurante para nos alimentar. Íamos caminhando, e eu me punha a olhar para trás, esquecendo-me do alerta da tia. Eu já estava exausta quando algo me chamou muito a atenção. Até então eu não havia olhado para cima; quando fiz isso, fiquei aterrorizada! Apontei o dedinho para cima e perguntei:<br>— O que é aquilo, tia?<br><br>Ela abaixou a minha mãozinha e disse:<br>— Não aponte e nem olhe para cima, as pessoas vão pensar que você é uma menina da roça.<br><br>Mas o show estava só começando. Os prédios eram altos, nunca tinha visto aquilo antes; era tudo novo para mim. Depois de ter dado a primeira voltinha no centro da cidade, fui conhecer a casa da tia. Achei tudo muito lindo e diferente de nossa humilde casa na roça. Fiquei maravilhada, agora era só questão de me adaptar aos costumes e às novas regras impostas pela minha tia, que ficou no lugar de minha mãe.` },
+            { id: 'gatos', theme: 'licoes', title: 'Gatos, Charretes e Pirolitos', content: `Enquanto eu me adaptava, minha tia continuava com o tratamento de minhas queimaduras. Eram muito dolorosas, mas eu suportava porque queria ficar curada logo. Enfim, acabou o tratamento médico! Agora eu podia brincar, podia correr atrás dos gatos!<br><br>Havia muitos gatos, eram dos vizinhos, mas muito engraçados e diferentes dos gatos da minha roça. Ao anoitecer, eles faziam uma reunião entre eles para tratar de alguns "negócios". Não me pergunte o que era, pois não tenho resposta a esse enigma! Só sei que, em dado momento daquela reunião, eles divergiam uns dos outros e aí o pau quebrava. Era tapa pra lá, tapa pra cá, gritos... E assim passávamos noites acordados. Minha tia por vezes saía lá fora com um porrete na mão, mas eles corriam feito uma lebre. Essa foi a parte engraçada que se passou comigo naquela cidade.<br><br>Quero mencionar aqui que nós éramos cristãos evangélicos e, todos os domingos, minha tia me levava à Escola Bíblica Dominical. Isso para mim não tinha preço! Saíamos rumo à igreja e, ao chegarmos na rua, minha tia me surpreendeu novamente com uma condução que eu nunca imaginava existir: a Charrete.<br><br>Afinal de contas, o que é uma charrete? É uma carroça projetada para conduzir três pessoas, de tração animal (cavalo). Ela é muito confortável, o seu banco de passageiros se equipara a um banco de Fusca. É toda coberta por um tecido semelhante a lona ou tecido de sombrinha colorida; muito chique e elegante! As charretes eram usadas como táxi.<br><br>Ao chegarmos na praça central, descemos, minha tia pagou a passagem e o charreteiro foi embora. Levantei a cabeça e olhei: diante de mim estava um majestoso templo cristão! Nunca imaginei que pudesse existir uma igreja tão grande. Fiquei deslumbrada com a beleza e a altura daquele templo. Era dezembro, véspera de Natal. No pináculo da igreja tinha uma corneta, a qual tocava louvores, espalhando lindas melodias de Natal sobre a cidade. Nós, as crianças, decorávamos lindas poesias que traduziam o verdadeiro Espírito do Natal. Até hoje, aos 73 anos, ainda me lembro e recito aquelas poesias. O tempo é incapaz de apagar do meu coração coisas tão significantes.<br><br>Eu não sabia ler, nem conhecia nenhuma letra do abecedário, mas minha tia, com muita paciência e amor, me alfabetizou através da leitura da Bíblia Sagrada. Foram momentos ímpares na minha vida!<br><br>Também aprendi a fazer balas e "pirolitos" (pirulitos). As balas eram em formato de chupetas de bebê. Ficava eu na porta da casa da minha tia gritando: "Ó O PIROLITO! Ó O PIROLITO!". Esse era o meu digno trabalho de menina de 7 anos.<br><br>Tinha também meus momentos de lazer, muito preciosos. Ao lado da casa da tia passava o trem, e a 100 metros da linha, o exuberante Rio Doce descia mansamente com suas águas claras, serpenteando a imponente Ibituruna, de 1.123 metros de altura. Tive o privilégio de desfrutar de todas essas belezas naturais! Hoje, junto à pedra Ibituruna, foi construído o maior edifício de todo o Estado de Minas Gerais. Mas as minhas memórias continuam sendo o alicerce mais alto que conheço.` },
+            { id: 'argentino', theme: 'licoes', title: 'O Menino Argentino', content: `Há muito tempo, morávamos num lindo lugar de nome **Vala Verde**. Neste lugar, havia lindos pomares de frutas, lagoas com muitas taboas e lindas saracuras. Gostávamos de correr atrás delas, só não conseguíamos pegá-las porque elas eram muito rápidas.<br><br>Foi então que ouvimos alguém passando na empoeirada estradinha. Aí, nós corremos para a beira da estrada para ver quem era. Foi então que vimos um menino sujo e maltrapilho. Ele se assustou conosco, e também nos assustamos com ele. Ficamos parados sem falar um com o outro, porque éramos muito tímidos, mas isso é próprio de crianças da roça. De repente, quebramos o silêncio e perguntamos: "Quem é você?".<br><br>E ele respondeu: "Eu não vou falar meu nome. Sou argentino, tenho onze anos e estou com fome".<br><br>"Vocês moram aqui?"<br><br>"Sim, moramos. Meu nome é Jaidi, minha irmã é Deey, minha mãe é Zima. Vamos para minha casa. Minha mãe é boazinha, ela vai te dar comida, café, biscoitos e muitas coisas boas".<br><br>Quando o argentino chegou lá em casa, nossa mãe ficou assustada e perguntou a nós: "Que menino é esse, Jaidinho?". Nós dissemos para a mamãe que ele se chamava Argentino e não sabia falar bem a nossa língua. Então, mamãe colocou água para esquentar, colocou a água na bacia e mandou que ele tomasse um banho. Depois, mamãe deu café com leite, batata doce assada, e biscoito na mesa, e chamou-o para comer. Nós nos sentamos à mesa junto com ele. Queríamos que ele falasse alguma coisa, mas ele ficava calado.<br><br>Foi então que mamãe perguntou a ele: "Por que é que você veio da Argentina sozinho? Quem são seus pais?". Ele não respondia nada, só ficava calado. De repente, aquele menino disse para minha mãe, com a voz um pouco enrolada: "Olha, tia, eu não tenho mãe. Quando ela morreu, eu era bebê. Meu pai me criou com a minha tia. Meu pai era muito mau, me batia muito e me castigava. Eu tinha que lavar as vasilhas todas sozinho, limpar o quintal. Eu não suportava mais aquela vida. Foi então que, um dia, depois que meu pai me bateu muito, ele foi dormir. De repente, eu senti uma raiva muito grande do meu pai, peguei um porrete e dei três golpes na cabeça dele. Aí eu saí correndo, porque fiquei com muito medo e arrependido. Eu não queria machucar meu pai. Estou muito triste. Tenho andado em vários lugares, mas as pessoas têm medo de mim. Eu não sou um menino mau, preciso de uma família para mim".<br><br>Então, minha mãe disse para ele que Jesus era o melhor amigo das crianças e que Ele iria cuidar dele.` },
+            { id: 'acao', theme: 'licoes', title: 'Uma Boa Ação', content: `Então, mamãe pegou uma sacola, colocou roupas limpas e comida para ele levar na viagem. Também disse para ele: "Se você quiser, pode ficar aqui. Nós vamos para a igreja adorar ao Senhor Jesus. Se você for, Ele vai tirar a tristeza do seu coração e te fazer feliz. Também vai perdoar os teus pecados e te levar para o céu quando Ele voltar".<br><br>Aquela criança preferiu seguir viagem e foi embora. Mas nós fizemos uma boa ação.` },
+            { id: 'anjo', theme: 'licoes', title: 'O Anjo Voando no Céu', content: `A história do anjo foi assim. Era dezembro e estava chovendo muito. Os campos estavam todos floridos, e os rios e lagoas, todos cheios. O pomar de frutas do vovô parecia um paraíso na Terra.<br><br>Amanheceu na fazenda, e o sol fazia reluzir seus raios, que entravam pelas frestas das portas e janelas. Mamãe já havia se levantado para fazer o café, tirar o leite das vacas e assar bolos e biscoitos. Enquanto isto, as crianças dormiam como anjos. Depois de tudo pronto, mamãe nos acordava para o café da manhã. Mas antes do café, mamãe nos alimentava com o Pão do Céu. Ah, vocês ficaram curiosos com o Pão do Céu? Vou contar-lhes o que é o Pão do Céu.<br><br>O Pão do Céu era um culto doméstico que mamãe fazia todas as manhãs com as crianças. Mariazinha, Zezinho, Florim, todos nós nos sentávamos em volta de uma mesa muito grande. Em cima da mesa, tinha café com leite, queijo, broa de fubá, biscoito de polvilho e broa. Mamãe pegava a Bíblia, lia ela para nós ouvirmos, depois explicava tudo o que ela leu, e nós ficávamos quietinhos, ouvindo mamãe. Depois, nós cantávamos lindos corinhos em louvor ao nome do Senhor.<br><br>Num destes cultos domésticos, mamãe ensinou sobre a volta de Jesus, e Mariazinha prestou muita atenção no que mamãe ensinava e ficou meditando naquele momento tão lindo. Depois, mamãe terminou o cultinho, nós tomamos o café e fomos brincar.<br><br>De repente, Mariazinha olha para o céu e vê um anjo muito lindo que passou pelo meio do céu tocando uma linda trombeta de ouro. Ela saiu correndo, chamando a mãe, e contou para ela. Mamãe ficou feliz e disse: "Quando Jesus voltar, este anjo vai vir com Ele e vai nos levar para o céu". Peça para a mamãe fazer o culto doméstico.` },
+            { id: 'fragmentos', theme: 'final', title: 'Fragmentos', content: `<strong>Pedro Rita:</strong> Pedro Rita era um homem muito bom. Morava numa fazenda à beira da estrada. Tinha muitas moças; elas gostavam de lavar roupas no rio e também de tomar banho.<br><br><strong>A Menina da Porteira:</strong> À beira da estrada empoeirada, havia uma vendinha. Ali morava uma família muito especial. Sabe por quê? Porque todos serviam ao Senhor Jesus. Nesta família, tinha uma menina por nome Maria. Tinha apenas 6 anos e gostava muito de ver a boiada passar na estrada.` },
+            { id: 'poemas', theme: 'final', title: 'Poemas e Canções', content: `<blockquote class="border-l-4 border-orange-800/50 pl-4 italic text-stone-600 mb-6">Planos que, embora fossem um sonho, se perderam.<br>Luto do que era certo, agora morreu.<br>Algemado por um peso, oh, quão triste eu andei,<br>Até sentir a mão de Cristo,<br>Não sou mais quem era, eu sei.<br>Tocou-me, Jesus, tocou-me,<br>De paz Ele encheu meu coração.<br>Quando o Senhor Jesus me tocou,<br>Livrou-me da escuridão.<br>Desde que aceitei a Cristo<br>E senti seu terno amor,<br>Tenho achado paz e vida,<br>Para sempre cantarei em Seu louvor.</blockquote><blockquote>Está escrito no Livro Santo:<br>"Ama teu próximo de coração."<br>Um certo dia, Cristo, olhando a multidão,<br>movido pelo amor, multiplicou o pão.<br>Queria que os homens vissem o sinal<br>de um Deus que tem poder real. Depois daqueles dias, muitos O deixaram, não era o pão do céu, nem era o Seu amor que os fazia estar seguindo aquela luz. Deixaram logo então Jesus.<br><br>Onde está Jesus? Onde opera a Sua mão? Muitos O seguem só na grande multidão, num templo conhecido ou na forma de louvar. São medidas que o homem dá. É hora de saber qual a sua posição, seguindo a Jesus, qual a maior motivação? Dinheiro, posição, talvez se o "eu" predominar, quem sabe a multidão se vá.</blockquote>` }
+        ];
 
-            const filters = {
-                all: 'Todas as Histórias',
-                inicio: 'A Vida em Vale Verde',
-                sustos: 'Sustos e Livramentos',
-                licoes: 'Encontros e Lições',
-                final: 'Fragmentos e Poemas'
-            };
+        let currentPage = 0;
+        const totalPages = stories.length;
 
-            const storiesContainer = document.getElementById('stories-container');
-            const filterButtonsContainer = document.getElementById('filter-buttons');
-            const navMenu = document.getElementById('nav-menu');
-            const navToggle = document.getElementById('nav-toggle');
-
-            function renderStories() {
-                let storiesHTML = '';
-                let navHTML = '';
-                stories.forEach(story => {
-                    storiesHTML += `
-                        <article id="${story.id}" data-theme="${story.theme}" class="story-card bg-white/50 p-6 md:p-8 rounded-lg shadow-sm border border-stone-200/80">
-                            <h2 class="text-3xl font-bold text-orange-900/90 mb-4">${story.title}</h2>
-                            <div class="prose max-w-none text-stone-700 leading-relaxed">${story.content}</div>
-                        </article>
-                    `;
-                    navHTML += `<li><a href="#${story.id}" class="nav-link block text-stone-700 hover:text-orange-800 font-semibold py-2">${story.title}</a></li>`;
-                });
-                storiesContainer.innerHTML = storiesHTML;
-                navMenu.innerHTML = navHTML;
-            }
-
-            function renderFilters() {
-                let filtersHTML = '';
-                for (const key in filters) {
-                    const isActive = key === 'all' ? 'bg-orange-800 text-white' : 'bg-white hover:bg-stone-100 text-stone-700';
-                    filtersHTML += `<button data-filter="${key}" class="filter-btn px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200 shadow-sm ${isActive}">${filters[key]}</button>`;
-                }
-                filterButtonsContainer.innerHTML = filtersHTML;
-            }
-
-            function handleFilterClick(e) {
-                if (!e.target.matches('.filter-btn')) return;
-
-                const selectedFilter = e.target.dataset.filter;
-                
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.classList.remove('bg-orange-800', 'text-white');
-                    btn.classList.add('bg-white', 'hover:bg-stone-100', 'text-stone-700');
-                });
-                e.target.classList.add('bg-orange-800', 'text-white');
-                e.target.classList.remove('bg-white', 'hover:bg-stone-100', 'text-stone-700');
-
-                document.querySelectorAll('.story-card').forEach(card => {
-                    if (selectedFilter === 'all' || card.dataset.theme === selectedFilter) {
-                        card.classList.remove('hidden-card');
-                    } else {
-                        card.classList.add('hidden-card');
-                    }
-                });
-            }
-
-            function handleNavClick(e) {
-                e.preventDefault();
-                if (e.target.matches('.nav-link')) {
-                    const targetId = e.target.getAttribute('href');
-                    const targetElement = document.querySelector(targetId);
-                    if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'smooth' });
-                    }
-                    if (window.innerWidth < 768) {
-                       navMenu.classList.add('hidden');
-                    }
-                }
-            }
+        function initBook() {
+            const bookContainer = document.getElementById('book');
             
-            navToggle.addEventListener('click', () => {
-                navMenu.classList.toggle('hidden');
+            // Gerar as páginas em ordem inversa de Z-Index para que a primeira fique no topo
+            stories.forEach((story, index) => {
+                const page = document.createElement('div');
+                page.className = 'page';
+                page.id = `page-${index}`;
+                // Z-index decrescente: Página 0 tem z-index maior (topo)
+                page.style.zIndex = totalPages - index; 
+
+                // Conteúdo da Frente
+                let contentHTML = '';
+                
+                if (story.type === 'cover') {
+                    contentHTML = `
+                        <div class="page-front capa">
+                            <h1 class="title-fancy text-6xl mb-4 text-orange-200">Gecy Maria</h1>
+                            <div class="w-16 h-16 bg-white/20 rounded-full mx-auto mb-6 flex items-center justify-center">
+                                <span class="text-3xl">✝</span>
+                            </div>
+                            <h2 class="text-2xl font-light tracking-widest uppercase mb-12">Autobiografia</h2>
+                            <p class="mt-auto text-orange-200/80 text-sm">Toque para abrir</p>
+                        </div>
+                    `;
+                } else if (story.type === 'index') {
+                    let indexLinks = stories.slice(2).map((s, i) => 
+                        `<li onclick="goToPage(${i + 2})" class="cursor-pointer hover:text-orange-800 border-b border-stone-200 py-2 flex justify-between">
+                            <span class="truncate pr-4">${s.title}</span> <span class="text-stone-400 text-sm whitespace-nowrap">${i+3}</span>
+                         </li>`
+                    ).join('');
+                    
+                    contentHTML = `
+                        <div class="page-front text-stone-800">
+                            <h2 class="text-3xl font-bold text-center mb-8 text-orange-900 border-b-2 border-orange-900/20 pb-4">Índice</h2>
+                            <ul class="space-y-1 text-sm md:text-base font-serif">
+                                ${indexLinks}
+                            </ul>
+                            <div class="page-number">Página 2</div>
+                        </div>
+                    `;
+                } else {
+                    // Página de História Padrão
+                    contentHTML = `
+                        <div class="page-front">
+                            <h2 class="text-3xl font-bold text-orange-900/90 mb-6 font-serif">${story.title}</h2>
+                            <div class="prose prose-stone leading-relaxed text-lg text-justify">
+                                ${story.content}
+                            </div>
+                            <div class="page-number">Página ${index + 1}</div>
+                        </div>
+                    `;
+                }
+
+                // Conteúdo do Verso (O que aparece quando vira para a esquerda)
+                // No verso, podemos colocar uma textura ou deixar em branco envelhecido
+                const backHTML = `
+                    <div class="page-back">
+                        <div class="opacity-10 text-stone-500 text-6xl font-serif select-none">GM</div>
+                    </div>
+                `;
+
+                page.innerHTML = contentHTML + backHTML;
+                
+                // Evento de clique na própria página para virar
+                page.addEventListener('click', (e) => {
+                    // Se clicar em links do índice, não vira a página imediatamente pelo clique do container
+                    if(e.target.closest('li')) return;
+                    nextPage();
+                });
+
+                bookContainer.appendChild(page);
             });
 
-            renderStories();
-            renderFilters();
+            updateButtons();
+        }
 
-            filterButtonsContainer.addEventListener('click', handleFilterClick);
-            navMenu.addEventListener('click', handleNavClick);
+        function updateButtons() {
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            if (currentPage === 0) {
+                btnPrev.classList.add('btn-disabled');
+            } else {
+                btnPrev.classList.remove('btn-disabled');
+            }
+
+            if (currentPage >= totalPages) {
+                btnNext.classList.add('btn-disabled');
+            } else {
+                btnNext.classList.remove('btn-disabled');
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                const page = document.getElementById(`page-${currentPage}`);
+                if (page) {
+                    page.classList.add('flipped');
+                    currentPage++;
+                    updateButtons();
+                }
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                const page = document.getElementById(`page-${currentPage}`);
+                if (page) {
+                    page.classList.remove('flipped');
+                    updateButtons();
+                }
+            }
+        }
+
+        // Função para o Índice pular páginas
+        window.goToPage = function(targetIndex) {
+            // Se o alvo for maior que atual, vira todas até lá
+            if (targetIndex > currentPage) {
+                const interval = setInterval(() => {
+                    if (currentPage >= targetIndex) {
+                        clearInterval(interval);
+                    } else {
+                        nextPage();
+                    }
+                }, 100); // Velocidade rápida de folhear
+            }
+            // Se o alvo for menor (voltar), desvira
+            else if (targetIndex < currentPage) {
+                 const interval = setInterval(() => {
+                    if (currentPage <= targetIndex) {
+                        clearInterval(interval);
+                    } else {
+                        prevPage();
+                    }
+                }, 100);
+            }
+        };
+
+        // Event Listeners dos Botões
+        document.getElementById('btn-next').addEventListener('click', nextPage);
+        document.getElementById('btn-prev').addEventListener('click', prevPage);
+
+        // Teclado
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') prevPage();
         });
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', initBook);
+
     </script>
 </body>
 </html>
