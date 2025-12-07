@@ -2,39 +2,39 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gecy Maria: O Livro da Vida</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gecy Maria: Autobiografia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Inter:wght@400;700&family=Great+Vibes&display=swap" rel="stylesheet">
     
     <style>
-        /* Configurações Globais */
+        /* --- Configurações Globais --- */
         body {
             font-family: 'Lora', serif;
-            background-color: #f0eadd; /* Cor de mesa de madeira ou fundo neutro */
+            background-color: #f0eadd;
             background-image: radial-gradient(#d6cbb3 1px, transparent 1px);
             background-size: 20px 20px;
-            overflow: hidden; /* Evita scroll na página principal, o scroll é dentro do livro */
+            overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* O Palco 3D */
+        /* --- Estrutura da Cena (Desktop) --- */
         .scene {
             width: 100%;
             height: 85vh;
-            max-width: 1000px; /* Largura máxima do livro aberto */
-            perspective: 1500px;
+            max-width: 1000px;
+            perspective: 1500px; /* Perspectiva 3D apenas para desktop */
             position: relative;
             margin: 0 auto;
         }
 
-        /* O Livro */
         .book {
             position: relative;
             width: 100%;
@@ -42,76 +42,120 @@
             transform-style: preserve-3d;
         }
 
-        /* As Páginas */
+        /* --- Estilo das Páginas (Base) --- */
         .page {
             position: absolute;
-            width: 50%; /* Metade da largura para desktop (direita) */
+            width: 50%; /* Desktop: Metade da tela */
             height: 100%;
             top: 0;
-            right: 0; /* Todas as páginas começam na direita */
-            transform-origin: left center; /* O eixo da virada é a esquerda (lombada) */
-            transition: transform 1s cubic-bezier(0.645, 0.045, 0.355, 1);
+            right: 0;
+            transform-origin: left center;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.5s;
             transform-style: preserve-3d;
             background-color: #FDFBF8;
             border-radius: 0 10px 10px 0;
-            box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -5px 0 10px rgba(0,0,0,0.1);
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
+            box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -2px 0 5px rgba(0,0,0,0.1);
             cursor: pointer;
+            will-change: transform; /* Otimização de performance */
         }
 
-        /* Conteúdo da Página */
-        .page-front, .page-back {
+        /* Conteúdo interno */
+        .page-front {
             position: absolute;
             width: 100%;
             height: 100%;
-            backface-visibility: hidden; /* Esconde o verso quando virado */
+            backface-visibility: hidden; /* Esconde o verso */
             padding: 40px;
-            overflow-y: auto; /* Permite rolar se o texto for longo */
-            background-image: linear-gradient(to right, #e3dac9 0%, #FDFBF8 10%); /* Sombra da lombada */
+            overflow-y: auto;
+            background-image: linear-gradient(to right, #e3dac9 0%, #FDFBF8 10%);
+            -webkit-overflow-scrolling: touch; /* Rolagem suave no iOS */
         }
 
-        /* O Verso da Página (quando ela vira para a esquerda) */
+        /* Verso da página (Desktop 3D) */
         .page-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
             transform: rotateY(180deg);
+            backface-visibility: hidden;
             background-image: linear-gradient(to left, #e3dac9 0%, #FDFBF8 10%);
             border-radius: 10px 0 0 10px;
-            border-right: 1px solid #ddd;
             display: flex;
             align-items: center;
             justify-content: center;
             background-color: #f7f3e8;
         }
 
-        /* Estado: Página Virada */
+        /* Estado Virado (Desktop) */
         .page.flipped {
             transform: rotateY(-180deg);
-            z-index: 0; /* Vai para o fundo da pilha da esquerda */
+            z-index: 0 !important; /* Vai para baixo */
         }
 
-        /* Ajustes Mobile: Livro vira uma pilha simples */
+        /* --- MODO MOBILE (A Correção do Crash) --- */
+        /* Removemos o 3D pesado para evitar estouro de memória no celular */
         @media (max-width: 768px) {
             .scene {
-                max-width: 95%;
+                perspective: none; /* Desativa 3D */
                 height: 80vh;
+                max-width: 100%;
+                padding: 10px;
             }
+
+            .book {
+                transform-style: flat; /* Renderização 2D simples */
+            }
+
             .page {
-                width: 100%; /* Largura total no mobile */
-                border-radius: 5px;
+                width: 100%; /* Ocupa toda a largura */
+                left: 0;
+                border-radius: 8px;
+                transform-origin: center center;
+                transition: transform 0.4s ease, opacity 0.4s ease;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                
+                /* Esconde páginas não ativas para economizar memória */
+                opacity: 0;
+                pointer-events: none;
+                transform: translateX(20px) scale(0.95); /* Efeito sutil de entrada */
+                display: none; /* Garante que o navegador não renderize */
             }
+
+            /* Página Atual Visível */
+            .page.active-mobile {
+                display: block;
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateX(0) scale(1);
+                z-index: 100 !important;
+            }
+
+            /* Página Anterior (saiu para a esquerda) */
             .page.flipped {
-                transform: rotateY(-180deg); /* Ainda vira, mas sai da tela praticamente */
-                opacity: 0; /* Esconde no mobile para não atrapalhar */
+                display: block;
+                opacity: 0;
+                transform: translateX(-20px) scale(0.95);
+                pointer-events: none;
+                z-index: 50 !important;
             }
+
             .page-front {
-                padding: 20px;
+                padding: 20px 20px 80px 20px; /* Mais espaço embaixo para não cobrir botões */
+                border-radius: 8px;
+                background-image: none; /* Remove gradiente pesado */
+                background-color: #FDFBF8;
+            }
+
+            .page-back {
+                display: none; /* Não renderiza o verso no mobile */
             }
         }
 
-        /* Estilização Específica do Conteúdo */
+        /* --- Estilos de Conteúdo --- */
         .capa {
-            background-color: #7c2d12; /* Cor de couro */
+            background-color: #7c2d12;
             color: white;
             display: flex;
             flex-direction: column;
@@ -122,24 +166,12 @@
             background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239c4221' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
         }
 
-        .title-fancy {
-            font-family: 'Great Vibes', cursive;
-        }
+        .title-fancy { font-family: 'Great Vibes', cursive; }
 
-        /* Scrollbar estilizada */
-        .page-front::-webkit-scrollbar {
-            width: 6px;
-        }
-        .page-front::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        .page-front::-webkit-scrollbar-thumb {
-            background: #d6cbb3; 
-            border-radius: 3px;
-        }
-        .page-front::-webkit-scrollbar-thumb:hover {
-            background: #a89f8d; 
-        }
+        /* Scrollbar */
+        .page-front::-webkit-scrollbar { width: 4px; }
+        .page-front::-webkit-scrollbar-track { background: transparent; }
+        .page-front::-webkit-scrollbar-thumb { background: #d6cbb3; border-radius: 2px; }
 
         .page-number {
             position: absolute;
@@ -148,57 +180,66 @@
             text-align: center;
             font-size: 0.8rem;
             color: #888;
-            font-family: 'Inter', sans-serif;
+            left: 0;
+            pointer-events: none;
         }
 
-        /* Botões de Navegação Flutuantes */
+        /* Botões de Navegação */
         .nav-btn {
             position: fixed;
-            bottom: 20px;
+            bottom: 25px;
             background: #7c2d12;
             color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
+            padding: 12px 24px; /* Área de toque maior */
+            border-radius: 50px;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             transition: transform 0.2s, background 0.2s;
-            z-index: 100;
+            z-index: 200;
             font-family: 'Inter', sans-serif;
             font-weight: bold;
+            font-size: 1rem;
+            touch-action: manipulation; /* Melhora resposta ao toque */
         }
-        .nav-btn:hover {
-            background: #9a3412;
-            transform: scale(1.05);
-        }
+        .nav-btn:active { transform: scale(0.95); }
         .btn-prev { left: 20px; }
         .btn-next { right: 20px; }
-        .btn-disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: #ccc;
+        .btn-disabled { opacity: 0.3; cursor: default; background: #999; pointer-events: none; }
+
+        /* Indicador de progresso no topo para mobile */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: #7c2d12;
+            transition: width 0.3s;
+            z-index: 300;
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Instruções no Topo -->
-    <div class="fixed top-4 text-stone-600 text-sm font-bold z-50 bg-white/80 px-4 py-1 rounded-full shadow backdrop-blur-sm">
-        <span class="hidden md:inline">Clique na borda da página ou use as setas para ler</span>
-        <span class="md:hidden">Toque nas setas abaixo para virar a página</span>
+    <div id="progress" class="progress-bar" style="width: 0%"></div>
+
+    <!-- Instruções -->
+    <div class="fixed top-4 text-stone-600 text-xs md:text-sm font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow backdrop-blur-sm pointer-events-none">
+        <span class="hidden md:inline">Clique na borda para virar a página</span>
+        <span class="md:hidden">Deslize o dedo ou use os botões</span>
     </div>
 
     <!-- O Livro -->
-    <div class="scene">
+    <div class="scene" id="scene-container">
         <div class="book" id="book">
-            <!-- As páginas serão geradas via Javascript aqui -->
+            <!-- Páginas geradas via JS -->
         </div>
     </div>
 
-    <!-- Controles Manuais -->
-    <button id="btn-prev" class="nav-btn btn-prev btn-disabled">❮ Anterior</button>
-    <button id="btn-next" class="nav-btn btn-next">Próximo ❯</button>
+    <!-- Controles -->
+    <button id="btn-prev" class="nav-btn btn-prev btn-disabled" aria-label="Página anterior">❮ Anterior</button>
+    <button id="btn-next" class="nav-btn btn-next" aria-label="Próxima página">Próximo ❯</button>
 
     <script>
         const stories = [
@@ -220,22 +261,29 @@
             { id: 'acao', theme: 'licoes', title: 'Uma Boa Ação', content: `Então, mamãe pegou uma sacola, colocou roupas limpas e comida para ele levar na viagem. Também disse para ele: "Se você quiser, pode ficar aqui. Nós vamos para a igreja adorar ao Senhor Jesus. Se você for, Ele vai tirar a tristeza do seu coração e te fazer feliz. Também vai perdoar os teus pecados e te levar para o céu quando Ele voltar".<br><br>Aquela criança preferiu seguir viagem e foi embora. Mas nós fizemos uma boa ação.` },
             { id: 'anjo', theme: 'licoes', title: 'O Anjo Voando no Céu', content: `A história do anjo foi assim. Era dezembro e estava chovendo muito. Os campos estavam todos floridos, e os rios e lagoas, todos cheios. O pomar de frutas do vovô parecia um paraíso na Terra.<br><br>Amanheceu na fazenda, e o sol fazia reluzir seus raios, que entravam pelas frestas das portas e janelas. Mamãe já havia se levantado para fazer o café, tirar o leite das vacas e assar bolos e biscoitos. Enquanto isto, as crianças dormiam como anjos. Depois de tudo pronto, mamãe nos acordava para o café da manhã. Mas antes do café, mamãe nos alimentava com o Pão do Céu. Ah, vocês ficaram curiosos com o Pão do Céu? Vou contar-lhes o que é o Pão do Céu.<br><br>O Pão do Céu era um culto doméstico que mamãe fazia todas as manhãs com as crianças. Mariazinha, Zezinho, Florim, todos nós nos sentávamos em volta de uma mesa muito grande. Em cima da mesa, tinha café com leite, queijo, broa de fubá, biscoito de polvilho e broa. Mamãe pegava a Bíblia, lia ela para nós ouvirmos, depois explicava tudo o que ela leu, e nós ficávamos quietinhos, ouvindo mamãe. Depois, nós cantávamos lindos corinhos em louvor ao nome do Senhor.<br><br>Num destes cultos domésticos, mamãe ensinou sobre a volta de Jesus, e Mariazinha prestou muita atenção no que mamãe ensinava e ficou meditando naquele momento tão lindo. Depois, mamãe terminou o cultinho, nós tomamos o café e fomos brincar.<br><br>De repente, Mariazinha olha para o céu e vê um anjo muito lindo que passou pelo meio do céu tocando uma linda trombeta de ouro. Ela saiu correndo, chamando a mãe, e contou para ela. Mamãe ficou feliz e disse: "Quando Jesus voltar, este anjo vai vir com Ele e vai nos levar para o céu". Peça para a mamãe fazer o culto doméstico.` },
             { id: 'fragmentos', theme: 'final', title: 'Fragmentos', content: `<strong>Pedro Rita:</strong> Pedro Rita era um homem muito bom. Morava numa fazenda à beira da estrada. Tinha muitas moças; elas gostavam de lavar roupas no rio e também de tomar banho.<br><br><strong>A Menina da Porteira:</strong> À beira da estrada empoeirada, havia uma vendinha. Ali morava uma família muito especial. Sabe por quê? Porque todos serviam ao Senhor Jesus. Nesta família, tinha uma menina por nome Maria. Tinha apenas 6 anos e gostava muito de ver a boiada passar na estrada.` },
-            { id: 'poemas', theme: 'final', title: 'Poemas e Canções', content: `<blockquote class="border-l-4 border-orange-800/50 pl-4 italic text-stone-600 mb-6">Planos que, embora fossem um sonho, se perderam.<br>Luto do que era certo, agora morreu.<br>Algemado por um peso, oh, quão triste eu andei,<br>Até sentir a mão de Cristo,<br>Não sou mais quem era, eu sei.<br>Tocou-me, Jesus, tocou-me,<br>De paz Ele encheu meu coração.<br>Quando o Senhor Jesus me tocou,<br>Livrou-me da escuridão.<br>Desde que aceitei a Cristo<br>E senti seu terno amor,<br>Tenho achado paz e vida,<br>Para sempre cantarei em Seu louvor.</blockquote><blockquote>Está escrito no Livro Santo:<br>"Ama teu próximo de coração."<br>Um certo dia, Cristo, olhando a multidão,<br>movido pelo amor, multiplicou o pão.<br>Queria que os homens vissem o sinal<br>de um Deus que tem poder real. Depois daqueles dias, muitos O deixaram, não era o pão do céu, nem era o Seu amor que os fazia estar seguindo aquela luz. Deixaram logo então Jesus.<br><br>Onde está Jesus? Onde opera a Sua mão? Muitos O seguem só na grande multidão, num templo conhecido ou na forma de louvar. São medidas que o homem dá. É hora de saber qual a sua posição, seguindo a Jesus, qual a maior motivação? Dinheiro, posição, talvez se o "eu" predominar, quem sabe a multidão se vá.</blockquote>` }
+            { id: 'poemas', theme: 'final', title: 'Poemas e Canções', content: `<blockquote class="border-l-4 border-orange-800/50 pl-4 italic text-stone-600 mb-6">Planos que, embora fossem um sonho, se perderam.<br>Luto do que era certo, agora morreu.<br>Algemado por um peso, oh, quão triste eu andei,<br>Até sentir a mão de Cristo,<br>Não sou mais quem era, eu sei.<br>Tocou-me, Jesus, tocou-me,<br>De paz Ele encheu meu coração.<br>Quando o Senhor Jesus me tocou,<br>Livrou-me da escuridão.<br>Desde que aceitei a Cristo<br>E senti seu terno amor,<br>Tenho achado paz e vida,<br>Para sempre cantarei em Seu louvor.</blockquote><blockquote>Está escrito no Livro Santo:<br>"Ama teu próximo de coração."<br>Um certo dia, Cristo, olhando a multidão,<br>movido pelo amor, multiplicou o pão.<br>Queria que os homens vissem o sinal<br>de um Deus que tem poder real. Depois daqueles dias, muitos O deixaram, não era o Seu amor que os fazia estar seguindo aquela luz. Deixaram logo então Jesus.<br><br>Onde está Jesus? Onde opera a Sua mão? Muitos O seguem só na grande multidão, num templo conhecido ou na forma de louvar. São medidas que o homem dá. É hora de saber qual a sua posição, seguindo a Jesus, qual a maior motivação? Dinheiro, posição, talvez se o "eu" predominar, quem sabe a multidão se vá.</blockquote>` }
         ];
 
         let currentPage = 0;
         const totalPages = stories.length;
+        const bookContainer = document.getElementById('book');
+        const progressBar = document.getElementById('progress');
 
         function initBook() {
-            const bookContainer = document.getElementById('book');
-            
-            // Gerar as páginas em ordem inversa de Z-Index para que a primeira fique no topo
+            bookContainer.innerHTML = ''; // Limpa antes de recriar
+
             stories.forEach((story, index) => {
                 const page = document.createElement('div');
                 page.className = 'page';
                 page.id = `page-${index}`;
-                // Z-index decrescente: Página 0 tem z-index maior (topo)
+                
+                // Desktop Z-Index: Decrescente
                 page.style.zIndex = totalPages - index; 
+
+                // Lógica de classe ativa para Mobile (apenas a primeira começa visível)
+                if (index === 0) {
+                    page.classList.add('active-mobile');
+                }
 
                 // Conteúdo da Frente
                 let contentHTML = '';
@@ -243,36 +291,36 @@
                 if (story.type === 'cover') {
                     contentHTML = `
                         <div class="page-front capa">
-                            <h1 class="title-fancy text-6xl mb-4 text-orange-200">Gecy Maria</h1>
+                            <h1 class="title-fancy text-5xl md:text-6xl mb-4 text-orange-200 px-2">Gecy Maria</h1>
                             <div class="w-16 h-16 bg-white/20 rounded-full mx-auto mb-6 flex items-center justify-center">
                                 <span class="text-3xl">✝</span>
                             </div>
-                            <h2 class="text-2xl font-light tracking-widest uppercase mb-12">Autobiografia</h2>
-                            <p class="mt-auto text-orange-200/80 text-sm">Toque para abrir</p>
+                            <h2 class="text-xl md:text-2xl font-light tracking-widest uppercase mb-12">Autobiografia</h2>
+                            <p class="mt-auto text-orange-200/80 text-sm animate-pulse">Toque para começar</p>
                         </div>
                     `;
                 } else if (story.type === 'index') {
                     let indexLinks = stories.slice(2).map((s, i) => 
-                        `<li onclick="goToPage(${i + 2})" class="cursor-pointer hover:text-orange-800 border-b border-stone-200 py-2 flex justify-between">
-                            <span class="truncate pr-4">${s.title}</span> <span class="text-stone-400 text-sm whitespace-nowrap">${i+3}</span>
+                        `<li onclick="goToPage(${i + 2})" class="cursor-pointer hover:text-orange-800 border-b border-stone-200 py-3 flex justify-between items-center active:bg-stone-100 transition-colors">
+                            <span class="truncate pr-4 text-stone-800">${s.title}</span> 
+                            <span class="text-stone-400 text-xs whitespace-nowrap bg-stone-100 px-2 py-1 rounded-full">${i+3}</span>
                          </li>`
                     ).join('');
                     
                     contentHTML = `
                         <div class="page-front text-stone-800">
-                            <h2 class="text-3xl font-bold text-center mb-8 text-orange-900 border-b-2 border-orange-900/20 pb-4">Índice</h2>
-                            <ul class="space-y-1 text-sm md:text-base font-serif">
+                            <h2 class="text-3xl font-bold text-center mb-6 text-orange-900 border-b-2 border-orange-900/20 pb-4">Índice</h2>
+                            <ul class="space-y-1 text-base font-serif pb-10">
                                 ${indexLinks}
                             </ul>
                             <div class="page-number">Página 2</div>
                         </div>
                     `;
                 } else {
-                    // Página de História Padrão
                     contentHTML = `
                         <div class="page-front">
-                            <h2 class="text-3xl font-bold text-orange-900/90 mb-6 font-serif">${story.title}</h2>
-                            <div class="prose prose-stone leading-relaxed text-lg text-justify">
+                            <h2 class="text-2xl md:text-3xl font-bold text-orange-900/90 mb-6 font-serif leading-tight">${story.title}</h2>
+                            <div class="prose prose-stone prose-lg leading-relaxed text-justify pb-10">
                                 ${story.content}
                             </div>
                             <div class="page-number">Página ${index + 1}</div>
@@ -280,8 +328,7 @@
                     `;
                 }
 
-                // Conteúdo do Verso (O que aparece quando vira para a esquerda)
-                // No verso, podemos colocar uma textura ou deixar em branco envelhecido
+                // Verso (Apenas renderizado, mas oculto no mobile via CSS)
                 const backHTML = `
                     <div class="page-back">
                         <div class="opacity-10 text-stone-500 text-6xl font-serif select-none">GM</div>
@@ -290,10 +337,15 @@
 
                 page.innerHTML = contentHTML + backHTML;
                 
-                // Evento de clique na própria página para virar
+                // Clique para navegar (Desktop e Mobile)
                 page.addEventListener('click', (e) => {
-                    // Se clicar em links do índice, não vira a página imediatamente pelo clique do container
-                    if(e.target.closest('li')) return;
+                    if(e.target.closest('li')) return; // Se for link do índice, ignora
+                    
+                    // No mobile, clicar no texto não deve virar se estiver lendo
+                    // Vamos deixar apenas os botões ou swipe controlarem no mobile para evitar acidentes, 
+                    // mas mantemos o clique na capa.
+                    if (window.innerWidth < 768 && index !== 0) return;
+
                     nextPage();
                 });
 
@@ -301,76 +353,94 @@
             });
 
             updateButtons();
+            setupTouch();
         }
 
         function updateButtons() {
             const btnPrev = document.getElementById('btn-prev');
             const btnNext = document.getElementById('btn-next');
+            const progress = (currentPage / (totalPages - 1)) * 100;
 
-            if (currentPage === 0) {
-                btnPrev.classList.add('btn-disabled');
-            } else {
-                btnPrev.classList.remove('btn-disabled');
-            }
+            progressBar.style.width = `${progress}%`;
 
-            if (currentPage >= totalPages) {
-                btnNext.classList.add('btn-disabled');
-            } else {
-                btnNext.classList.remove('btn-disabled');
+            btnPrev.classList.toggle('btn-disabled', currentPage === 0);
+            btnNext.classList.toggle('btn-disabled', currentPage >= totalPages - 1); // Note o -1 aqui
+        }
+
+        function updateMobileClasses() {
+            // Remove active de todos
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.remove('active-mobile');
+                p.classList.remove('flipped');
+            });
+
+            // Lógica Desktop e Mobile Unificada visualmente
+            for (let i = 0; i < totalPages; i++) {
+                const page = document.getElementById(`page-${i}`);
+                if (i < currentPage) {
+                    page.classList.add('flipped'); // Já passou
+                } else if (i === currentPage) {
+                    page.classList.add('active-mobile'); // Atual visível no mobile
+                }
             }
         }
 
         function nextPage() {
-            if (currentPage < totalPages) {
-                const page = document.getElementById(`page-${currentPage}`);
-                if (page) {
-                    page.classList.add('flipped');
-                    currentPage++;
-                    updateButtons();
-                }
+            if (currentPage < totalPages - 1) { // Mudança para impedir ir além da última
+                currentPage++;
+                updateMobileClasses();
+                updateButtons();
+                // Scroll topo da página atual
+                const activePage = document.querySelector('.page-front');
+                if(activePage) activePage.scrollTop = 0;
             }
         }
 
         function prevPage() {
             if (currentPage > 0) {
                 currentPage--;
-                const page = document.getElementById(`page-${currentPage}`);
-                if (page) {
-                    page.classList.remove('flipped');
-                    updateButtons();
+                updateMobileClasses();
+                updateButtons();
+            }
+        }
+
+        window.goToPage = function(targetIndex) {
+            currentPage = targetIndex;
+            updateMobileClasses();
+            updateButtons();
+        };
+
+        // --- Detecção de Swipe (Deslizar o dedo) ---
+        function setupTouch() {
+            let touchStartX = 0;
+            let touchEndX = 0;
+            const minSwipeDistance = 50;
+
+            const scene = document.getElementById('scene-container');
+
+            scene.addEventListener('touchstart', e => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            scene.addEventListener('touchend', e => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+
+            function handleSwipe() {
+                if (touchEndX < touchStartX - minSwipeDistance) {
+                    nextPage(); // Deslizou para esquerda (próxima)
+                }
+                if (touchEndX > touchStartX + minSwipeDistance) {
+                    prevPage(); // Deslizou para direita (anterior)
                 }
             }
         }
 
-        // Função para o Índice pular páginas
-        window.goToPage = function(targetIndex) {
-            // Se o alvo for maior que atual, vira todas até lá
-            if (targetIndex > currentPage) {
-                const interval = setInterval(() => {
-                    if (currentPage >= targetIndex) {
-                        clearInterval(interval);
-                    } else {
-                        nextPage();
-                    }
-                }, 100); // Velocidade rápida de folhear
-            }
-            // Se o alvo for menor (voltar), desvira
-            else if (targetIndex < currentPage) {
-                 const interval = setInterval(() => {
-                    if (currentPage <= targetIndex) {
-                        clearInterval(interval);
-                    } else {
-                        prevPage();
-                    }
-                }, 100);
-            }
-        };
-
-        // Event Listeners dos Botões
+        // Event Listeners
         document.getElementById('btn-next').addEventListener('click', nextPage);
         document.getElementById('btn-prev').addEventListener('click', prevPage);
 
-        // Teclado
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextPage();
             if (e.key === 'ArrowLeft') prevPage();
