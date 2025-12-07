@@ -23,14 +23,15 @@
             align-items: center;
             justify-content: center;
             -webkit-font-smoothing: antialiased;
+            touch-action: pan-y; /* Permite scroll vertical, bloqueia horizontal nativo */
         }
 
-        /* --- Estrutura da Cena (Desktop) --- */
+        /* --- Estrutura da Cena --- */
         .scene {
             width: 100%;
             height: 85vh;
             max-width: 1000px;
-            perspective: 1500px; /* Perspectiva 3D apenas para desktop */
+            perspective: 1500px;
             position: relative;
             margin: 0 auto;
         }
@@ -42,21 +43,29 @@
             transform-style: preserve-3d;
         }
 
-        /* --- Estilo das Páginas (Base) --- */
+        /* --- Estilo das Páginas --- */
         .page {
             position: absolute;
-            width: 50%; /* Desktop: Metade da tela */
+            width: 50%;
             height: 100%;
             top: 0;
             right: 0;
             transform-origin: left center;
-            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.5s;
             transform-style: preserve-3d;
             background-color: #FDFBF8;
             border-radius: 0 10px 10px 0;
             box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -2px 0 5px rgba(0,0,0,0.1);
-            cursor: pointer;
-            will-change: transform; /* Otimização de performance */
+            cursor: grab;
+            will-change: transform;
+        }
+        
+        .page.grabbing {
+            cursor: grabbing;
+        }
+
+        /* Classe para ativar transição suave quando soltar a página */
+        .page-transition {
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         /* Conteúdo interno */
@@ -64,14 +73,13 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            backface-visibility: hidden; /* Esconde o verso */
+            backface-visibility: hidden;
             padding: 40px;
-            overflow-y: auto;
+            overflow: hidden; /* O scroll é no .content-scroll */
             background-image: linear-gradient(to right, #e3dac9 0%, #FDFBF8 10%);
-            -webkit-overflow-scrolling: touch; /* Rolagem suave no iOS */
         }
 
-        /* Verso da página (Desktop 3D) */
+        /* Verso da página */
         .page-back {
             position: absolute;
             width: 100%;
@@ -86,70 +94,44 @@
             align-items: center;
             justify-content: center;
             background-color: #f7f3e8;
+            pointer-events: none;
         }
 
-        /* Estado Virado (Desktop) */
-        .page.flipped {
-            transform: rotateY(-180deg);
-            z-index: 0 !important; /* Vai para baixo */
+        /* Sombra dinâmica */
+        .page-shadow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
         }
 
-        /* --- MODO MOBILE (A Correção do Crash) --- */
-        /* Removemos o 3D pesado para evitar estouro de memória no celular */
+        /* --- MODO MOBILE --- */
         @media (max-width: 768px) {
             .scene {
-                perspective: none; /* Desativa 3D */
+                perspective: 1200px;
                 height: 80vh;
                 max-width: 100%;
                 padding: 10px;
             }
 
-            .book {
-                transform-style: flat; /* Renderização 2D simples */
-            }
-
             .page {
-                width: 100%; /* Ocupa toda a largura */
-                left: 0;
-                border-radius: 8px;
-                transform-origin: center center;
-                transition: transform 0.4s ease, opacity 0.4s ease;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-                
-                /* Esconde páginas não ativas para economizar memória */
-                opacity: 0;
-                pointer-events: none;
-                transform: translateX(20px) scale(0.95); /* Efeito sutil de entrada */
-                display: none; /* Garante que o navegador não renderize */
+                width: 95%;
+                right: 2.5%;
+                border-radius: 5px 15px 15px 5px;
             }
-
-            /* Página Atual Visível */
-            .page.active-mobile {
-                display: block;
-                opacity: 1;
-                pointer-events: auto;
-                transform: translateX(0) scale(1);
-                z-index: 100 !important;
-            }
-
-            /* Página Anterior (saiu para a esquerda) */
-            .page.flipped {
-                display: block;
-                opacity: 0;
-                transform: translateX(-20px) scale(0.95);
-                pointer-events: none;
-                z-index: 50 !important;
+            
+            .page-back {
+                border-radius: 5px 15px 15px 5px;
             }
 
             .page-front {
-                padding: 20px 20px 80px 20px; /* Mais espaço embaixo para não cobrir botões */
-                border-radius: 8px;
-                background-image: none; /* Remove gradiente pesado */
-                background-color: #FDFBF8;
-            }
-
-            .page-back {
-                display: none; /* Não renderiza o verso no mobile */
+                padding: 20px 20px 70px 20px;
             }
         }
 
@@ -168,10 +150,17 @@
 
         .title-fancy { font-family: 'Great Vibes', cursive; }
 
-        /* Scrollbar */
-        .page-front::-webkit-scrollbar { width: 4px; }
-        .page-front::-webkit-scrollbar-track { background: transparent; }
-        .page-front::-webkit-scrollbar-thumb { background: #d6cbb3; border-radius: 2px; }
+        /* Scrollbar interna do conteúdo */
+        .content-scroll {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 10px;
+            /* Permite scroll suave e nativo */
+            -webkit-overflow-scrolling: touch; 
+        }
+        .content-scroll::-webkit-scrollbar { width: 4px; }
+        .content-scroll::-webkit-scrollbar-track { background: transparent; }
+        .content-scroll::-webkit-scrollbar-thumb { background: #d6cbb3; border-radius: 2px; }
 
         .page-number {
             position: absolute;
@@ -190,7 +179,7 @@
             bottom: 25px;
             background: #7c2d12;
             color: white;
-            padding: 12px 24px; /* Área de toque maior */
+            padding: 12px 24px;
             border-radius: 50px;
             border: none;
             cursor: pointer;
@@ -200,14 +189,13 @@
             font-family: 'Inter', sans-serif;
             font-weight: bold;
             font-size: 1rem;
-            touch-action: manipulation; /* Melhora resposta ao toque */
         }
         .nav-btn:active { transform: scale(0.95); }
         .btn-prev { left: 20px; }
         .btn-next { right: 20px; }
         .btn-disabled { opacity: 0.3; cursor: default; background: #999; pointer-events: none; }
 
-        /* Indicador de progresso no topo para mobile */
+        /* Indicador de progresso */
         .progress-bar {
             position: fixed;
             top: 0;
@@ -217,7 +205,6 @@
             transition: width 0.3s;
             z-index: 300;
         }
-
     </style>
 </head>
 <body>
@@ -225,9 +212,9 @@
     <div id="progress" class="progress-bar" style="width: 0%"></div>
 
     <!-- Instruções -->
-    <div class="fixed top-4 text-stone-600 text-xs md:text-sm font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow backdrop-blur-sm pointer-events-none">
-        <span class="hidden md:inline">Clique na borda para virar a página</span>
-        <span class="md:hidden">Deslize o dedo ou use os botões</span>
+    <div class="fixed top-4 text-stone-600 text-xs md:text-sm font-bold z-50 bg-white/90 px-4 py-2 rounded-full shadow backdrop-blur-sm pointer-events-none select-none text-center">
+        <span class="hidden md:inline">Arraste a folha para virar | Role o texto para ler</span>
+        <span class="md:hidden">Arraste para os lados para virar<br>Arraste para cima para ler o texto</span>
     </div>
 
     <!-- O Livro -->
@@ -268,37 +255,47 @@
         const totalPages = stories.length;
         const bookContainer = document.getElementById('book');
         const progressBar = document.getElementById('progress');
+        
+        // Estado do Drag e Scroll
+        let isDragging = false;
+        let isScrolling = false;
+        let startX = 0;
+        let startY = 0;
+        let currentDragPage = null;
+        let currentDragDirection = null; 
 
         function initBook() {
-            bookContainer.innerHTML = ''; // Limpa antes de recriar
+            bookContainer.innerHTML = '';
 
             stories.forEach((story, index) => {
                 const page = document.createElement('div');
                 page.className = 'page';
                 page.id = `page-${index}`;
                 
-                // Desktop Z-Index: Decrescente
+                // Z-Index reverso
                 page.style.zIndex = totalPages - index; 
 
-                // Lógica de classe ativa para Mobile (apenas a primeira começa visível)
-                if (index === 0) {
-                    page.classList.add('active-mobile');
+                // Visibilidade inicial otimizada
+                if (index > 1 && window.innerWidth < 768) {
+                    page.style.visibility = 'hidden';
                 }
 
                 // Conteúdo da Frente
                 let contentHTML = '';
-                
+                let innerContent = '';
+
                 if (story.type === 'cover') {
-                    contentHTML = `
-                        <div class="page-front capa">
-                            <h1 class="title-fancy text-5xl md:text-6xl mb-4 text-orange-200 px-2">Gecy Maria</h1>
+                    innerContent = `
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <h1 class="title-fancy text-5xl md:text-6xl mb-4 text-orange-200 px-2 leading-tight">Gecy Maria</h1>
                             <div class="w-16 h-16 bg-white/20 rounded-full mx-auto mb-6 flex items-center justify-center">
                                 <span class="text-3xl">✝</span>
                             </div>
                             <h2 class="text-xl md:text-2xl font-light tracking-widest uppercase mb-12">Autobiografia</h2>
-                            <p class="mt-auto text-orange-200/80 text-sm animate-pulse">Toque para começar</p>
+                            <p class="mt-auto text-orange-200/80 text-sm animate-pulse">Arraste para abrir</p>
                         </div>
                     `;
+                    contentHTML = `<div class="page-front capa">${innerContent}<div class="page-shadow"></div></div>`;
                 } else if (story.type === 'index') {
                     let indexLinks = stories.slice(2).map((s, i) => 
                         `<li onclick="goToPage(${i + 2})" class="cursor-pointer hover:text-orange-800 border-b border-stone-200 py-3 flex justify-between items-center active:bg-stone-100 transition-colors">
@@ -307,27 +304,24 @@
                          </li>`
                     ).join('');
                     
-                    contentHTML = `
-                        <div class="page-front text-stone-800">
-                            <h2 class="text-3xl font-bold text-center mb-6 text-orange-900 border-b-2 border-orange-900/20 pb-4">Índice</h2>
-                            <ul class="space-y-1 text-base font-serif pb-10">
-                                ${indexLinks}
-                            </ul>
-                        </div>
+                    innerContent = `
+                        <h2 class="text-3xl font-bold text-center mb-6 text-orange-900 border-b-2 border-orange-900/20 pb-4">Índice</h2>
+                        <ul class="space-y-1 text-base font-serif pb-10">
+                            ${indexLinks}
+                        </ul>
                     `;
+                    contentHTML = `<div class="page-front text-stone-800"><div class="content-scroll">${innerContent}</div><div class="page-shadow"></div></div>`;
                 } else {
-                    contentHTML = `
-                        <div class="page-front">
-                            <h2 class="text-2xl md:text-3xl font-bold text-orange-900/90 mb-6 font-serif leading-tight">${story.title}</h2>
-                            <div class="prose prose-stone prose-lg leading-relaxed text-justify pb-10">
-                                ${story.content}
-                            </div>
-                            <div class="page-number">Página ${index - 1}</div>
+                    innerContent = `
+                        <h2 class="text-2xl md:text-3xl font-bold text-orange-900/90 mb-6 font-serif leading-tight">${story.title}</h2>
+                        <div class="prose prose-stone prose-lg leading-relaxed text-justify pb-10">
+                            ${story.content}
                         </div>
+                        <div class="page-number">Página ${index - 1}</div>
                     `;
+                    contentHTML = `<div class="page-front"><div class="content-scroll">${innerContent}</div><div class="page-shadow"></div></div>`;
                 }
 
-                // Verso (Apenas renderizado, mas oculto no mobile via CSS)
                 const backHTML = `
                     <div class="page-back">
                         <div class="opacity-10 text-stone-500 text-6xl font-serif select-none">GM</div>
@@ -336,23 +330,14 @@
 
                 page.innerHTML = contentHTML + backHTML;
                 
-                // Clique para navegar (Desktop e Mobile)
-                page.addEventListener('click', (e) => {
-                    if(e.target.closest('li')) return; // Se for link do índice, ignora
-                    
-                    // No mobile, clicar no texto não deve virar se estiver lendo
-                    // Vamos deixar apenas os botões ou swipe controlarem no mobile para evitar acidentes, 
-                    // mas mantemos o clique na capa.
-                    if (window.innerWidth < 768 && index !== 0) return;
-
-                    nextPage();
-                });
+                // Previne que a imagem fantasma do drag nativo do navegador apareça
+                page.addEventListener('dragstart', e => e.preventDefault());
 
                 bookContainer.appendChild(page);
             });
 
             updateButtons();
-            setupTouch();
+            setupInteractiveDrag();
         }
 
         function updateButtons() {
@@ -363,89 +348,197 @@
             progressBar.style.width = `${progress}%`;
 
             btnPrev.classList.toggle('btn-disabled', currentPage === 0);
-            btnNext.classList.toggle('btn-disabled', currentPage >= totalPages - 1); // Note o -1 aqui
+            btnNext.classList.toggle('btn-disabled', currentPage >= totalPages - 1);
         }
 
-        function updateMobileClasses() {
-            // Remove active de todos
-            document.querySelectorAll('.page').forEach(p => {
-                p.classList.remove('active-mobile');
-                p.classList.remove('flipped');
-            });
-
-            // Lógica Desktop e Mobile Unificada visualmente
+        function finishFlip(targetIndex) {
+            currentPage = targetIndex;
+            updateButtons();
+            
             for (let i = 0; i < totalPages; i++) {
-                const page = document.getElementById(`page-${i}`);
+                const p = document.getElementById(`page-${i}`);
+                
+                // Remove estilos de drag manual
+                p.style.transform = '';
+                p.classList.remove('grabbing');
+                p.classList.add('page-transition'); 
+
+                // Lógica de Visibilidade para não pesar no celular
+                if (window.innerWidth < 768) {
+                    // Mantém visível a atual, a anterior e a próxima
+                    if (Math.abs(i - currentPage) <= 1) {
+                        p.style.visibility = 'visible';
+                        p.style.display = 'block';
+                    } else {
+                         p.style.visibility = 'hidden';
+                    }
+                }
+
+                // Estado Final: Virada ou Não
                 if (i < currentPage) {
-                    page.classList.add('flipped'); // Já passou
-                } else if (i === currentPage) {
-                    page.classList.add('active-mobile'); // Atual visível no mobile
+                    p.style.transform = 'rotateY(-180deg)';
+                    p.style.zIndex = i; 
+                } else {
+                    p.style.transform = 'rotateY(0deg)';
+                    p.style.zIndex = totalPages - i;
+                }
+
+                // Reseta sombra
+                const shadow = p.querySelector('.page-shadow');
+                if(shadow) shadow.style.opacity = '0';
+            }
+
+            setTimeout(() => {
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('page-transition'));
+            }, 600);
+        }
+
+        function setupInteractiveDrag() {
+            const scene = document.getElementById('scene-container');
+            
+            const startEvents = ['mousedown', 'touchstart'];
+            const moveEvents = ['mousemove', 'touchmove'];
+            const endEvents = ['mouseup', 'touchend', 'mouseleave'];
+
+            function getX(e) { return e.type.includes('mouse') ? e.pageX : e.touches[0].pageX; }
+            function getY(e) { return e.type.includes('mouse') ? e.pageY : e.touches[0].pageY; }
+
+            // --- INÍCIO ---
+            function onStart(e) {
+                if (e.target.closest('button')) return;
+
+                isDragging = false;
+                isScrolling = false;
+                startX = getX(e);
+                startY = getY(e);
+                
+                const width = window.innerWidth;
+                const isRightSide = startX > width / 2;
+
+                if (isRightSide && currentPage < totalPages) {
+                    currentDragPage = document.getElementById(`page-${currentPage}`);
+                    currentDragDirection = 'next';
+                } else if (!isRightSide && currentPage > 0) {
+                    currentDragPage = document.getElementById(`page-${currentPage - 1}`);
+                    currentDragDirection = 'prev';
+                } else {
+                    currentDragPage = null;
                 }
             }
+
+            // --- MOVIMENTO ---
+            function onMove(e) {
+                // Se já decidiu que é scroll, deixa o navegador cuidar
+                if (isScrolling) return;
+
+                const x = getX(e);
+                const y = getY(e);
+                const deltaX = x - startX;
+                const deltaY = y - startY;
+
+                // Decisão inicial: É Scroll ou é Drag?
+                if (!isDragging) {
+                    // Se moveu mais na vertical que na horizontal, é scroll
+                    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 5) {
+                        isScrolling = true;
+                        return; // Sai e deixa o scroll nativo acontecer
+                    } 
+                    // Se moveu mais na horizontal, é virada de página
+                    else if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
+                        isDragging = true;
+                        if (currentDragPage) currentDragPage.classList.add('grabbing');
+                    } else {
+                        // Movimento muito pequeno ainda, não faz nada
+                        return; 
+                    }
+                }
+
+                // Se estamos arrastando a página
+                if (isDragging && currentDragPage) {
+                    if (e.cancelable) e.preventDefault(); // Bloqueia scroll enquanto vira página
+
+                    const screenW = window.innerWidth;
+                    const bookW = screenW > 768 ? screenW / 2 : screenW;
+
+                    let rotation = 0;
+                    let opacityShadow = 0;
+
+                    if (currentDragDirection === 'next') {
+                        // De 0 a -180
+                        const progress = Math.min(0, Math.max(-bookW, deltaX)) / bookW;
+                        rotation = progress * 180;
+                        opacityShadow = Math.abs(progress) * 0.5;
+                    } else {
+                        // De -180 a 0
+                        const progress = Math.min(bookW, Math.max(0, deltaX)) / bookW;
+                        rotation = -180 + (progress * 180);
+                        opacityShadow = (1 - progress) * 0.5;
+                    }
+
+                    currentDragPage.style.transform = `rotateY(${rotation}deg)`;
+                    
+                    const shadow = currentDragPage.querySelector('.page-shadow');
+                    if (shadow) shadow.style.opacity = opacityShadow;
+                }
+            }
+
+            // --- FIM ---
+            function onEnd(e) {
+                if (!isDragging) return;
+                isDragging = false;
+                
+                if (!currentDragPage) return;
+
+                currentDragPage.classList.remove('grabbing');
+                currentDragPage.classList.add('page-transition'); 
+
+                const currentTransform = currentDragPage.style.transform;
+                const rotationMatch = currentTransform.match(/rotateY\(([-\d.]+)deg\)/);
+                let currentRot = rotationMatch ? parseFloat(rotationMatch[1]) : 0;
+
+                if (currentDragDirection === 'next') {
+                    if (currentRot < -30) { // Virou o suficiente
+                        finishFlip(currentPage + 1);
+                    } else { // Cancela
+                        currentDragPage.style.transform = 'rotateY(0deg)';
+                        const shadow = currentDragPage.querySelector('.page-shadow');
+                        if(shadow) shadow.style.opacity = '0';
+                    }
+                } else {
+                    if (currentRot > -150) { // Voltou o suficiente
+                        finishFlip(currentPage - 1);
+                    } else { // Cancela
+                        currentDragPage.style.transform = 'rotateY(-180deg)';
+                        const shadow = currentDragPage.querySelector('.page-shadow');
+                        if(shadow) shadow.style.opacity = '0';
+                    }
+                }
+                currentDragPage = null;
+            }
+
+            // Passive false é crucial para permitir preventDefault no touchmove
+            startEvents.forEach(evt => scene.addEventListener(evt, onStart, { passive: false }));
+            moveEvents.forEach(evt => window.addEventListener(evt, onMove, { passive: false }));
+            endEvents.forEach(evt => window.addEventListener(evt, onEnd));
         }
 
         function nextPage() {
-            if (currentPage < totalPages - 1) { // Mudança para impedir ir além da última
-                currentPage++;
-                updateMobileClasses();
-                updateButtons();
-                // Scroll topo da página atual
-                const activePage = document.querySelector('.page-front');
-                if(activePage) activePage.scrollTop = 0;
-            }
+            if (currentPage < totalPages) finishFlip(currentPage + 1);
         }
-
         function prevPage() {
-            if (currentPage > 0) {
-                currentPage--;
-                updateMobileClasses();
-                updateButtons();
-            }
+            if (currentPage > 0) finishFlip(currentPage - 1);
+        }
+        window.goToPage = function(target) {
+            finishFlip(target);
         }
 
-        window.goToPage = function(targetIndex) {
-            currentPage = targetIndex;
-            updateMobileClasses();
-            updateButtons();
-        };
-
-        // --- Detecção de Swipe (Deslizar o dedo) ---
-        function setupTouch() {
-            let touchStartX = 0;
-            let touchEndX = 0;
-            const minSwipeDistance = 50;
-
-            const scene = document.getElementById('scene-container');
-
-            scene.addEventListener('touchstart', e => {
-                touchStartX = e.changedTouches[0].screenX;
-            }, { passive: true });
-
-            scene.addEventListener('touchend', e => {
-                touchEndX = e.changedTouches[0].screenX;
-                handleSwipe();
-            }, { passive: true });
-
-            function handleSwipe() {
-                if (touchEndX < touchStartX - minSwipeDistance) {
-                    nextPage(); // Deslizou para esquerda (próxima)
-                }
-                if (touchEndX > touchStartX + minSwipeDistance) {
-                    prevPage(); // Deslizou para direita (anterior)
-                }
-            }
-        }
-
-        // Event Listeners
         document.getElementById('btn-next').addEventListener('click', nextPage);
         document.getElementById('btn-prev').addEventListener('click', prevPage);
-
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') nextPage();
             if (e.key === 'ArrowLeft') prevPage();
         });
 
-        // Inicializar
         document.addEventListener('DOMContentLoaded', initBook);
 
     </script>
