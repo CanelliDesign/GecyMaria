@@ -62,12 +62,19 @@
             border-radius: 0 10px 10px 0;
             box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -2px 0 5px rgba(0,0,0,0.1);
             cursor: grab;
+            
+            /* Otimização Crítica para Mobile: Só anima transformações */
             will-change: transform;
-            /* Garante que a página seja visível */
-            visibility: visible !important; 
-            display: block !important;
+            
+            /* Por padrão, escondemos tudo para evitar crash. O JS ativa as necessárias. */
+            display: none; 
         }
         
+        /* Apenas páginas ativas recebem display block via JS, mas garantimos aqui que tenham transição */
+        .page.active-page {
+            display: block;
+        }
+
         .page.grabbing {
             cursor: grabbing;
         }
@@ -255,30 +262,49 @@
             z-index: 300;
         }
         
-        /* Botão de Download */
+        /* Botão de Download Melhorado */
         .btn-download {
             position: fixed;
             top: 15px;
             right: 15px;
             z-index: 300;
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #7c2d12;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            background-color: #7c2d12;
+            color: #f7f3e8;
+            padding: 8px 16px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            border: 1px solid #e3dac9;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            border: 1px solid #551b08;
             cursor: pointer;
             transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+        
+        /* Estilo "Fita" ou Etiqueta */
+        .btn-download::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            bottom: -5px;
+            left: -5px;
+            border: 1px dashed rgba(124, 45, 18, 0.3);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
         .btn-download:hover {
-            transform: scale(1.1);
-            background-color: white;
+            transform: translateY(-2px);
+            background-color: #9a3412;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.2);
         }
-        .btn-download:active { transform: scale(0.95); }
+        .btn-download:active { transform: translateY(0); }
 
     </style>
 </head>
@@ -286,12 +312,13 @@
 
     <div id="progress" class="progress-bar" style="width: 0%"></div>
 
-    <!-- Botão de Download -->
-    <button class="btn-download" onclick="downloadBook()" title="Baixar para ver offline">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+    <!-- Botão de Download Melhorado -->
+    <button class="btn-download" onclick="downloadBook()" title="Baixar livro completo">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
             <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M12 12.75l-3-3m0 0l3-3m-3 3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.75V3" />
         </svg>
+        <span>Baixar Livro</span>
     </button>
 
     <!-- Instruções -->
@@ -365,9 +392,7 @@
                 // Z-Index reverso
                 page.style.zIndex = totalPages - index; 
 
-                // --- Correção: Removida a lógica de visibility: hidden ---
-                // Agora todas as páginas são renderizadas para evitar "buracos brancos"
-
+                // Conteúdo
                 let contentHTML = '';
                 let innerContent = '';
 
@@ -421,7 +446,26 @@
             });
 
             updateButtons();
+            // Apenas atualiza a visibilidade, não o drag ainda
+            updateVisiblePages();
             setupInteractiveDrag();
+        }
+
+        // Função crucial para memória: 
+        // Mostra APENAS a página atual, a próxima e a anterior.
+        // O resto ganha display:none para o navegador não tentar renderizar 3D nelas.
+        function updateVisiblePages() {
+            for (let i = 0; i < totalPages; i++) {
+                const p = document.getElementById(`page-${i}`);
+                if (!p) continue;
+
+                // Margem de segurança: 1 página antes, 1 depois
+                if (Math.abs(currentPage - i) <= 1) {
+                    p.style.display = 'block';
+                } else {
+                    p.style.display = 'none';
+                }
+            }
         }
 
         function updateButtons() {
@@ -451,8 +495,12 @@
             currentPage = targetIndex;
             updateButtons();
             
+            // Re-habilita páginas para animação
+            updateVisiblePages();
+
             for (let i = 0; i < totalPages; i++) {
                 const p = document.getElementById(`page-${i}`);
+                if (!p) continue;
                 
                 // Limpa estilos de drag
                 p.style.transform = '';
@@ -472,8 +520,10 @@
                 if(shadow) shadow.style.opacity = '0';
             }
 
+            // Limpa a transição e atualiza a visibilidade para economizar memória DEPOIS da animação
             setTimeout(() => {
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('page-transition'));
+                updateVisiblePages(); // Garante que as distantes sumam
             }, 600);
         }
 
@@ -497,6 +547,7 @@
                 const width = window.innerWidth;
                 const isRightSide = startX > width / 2;
 
+                // Garante que a página alvo esteja visível antes de começar a arrastar
                 if (isRightSide && currentPage < totalPages) {
                     currentDragPage = document.getElementById(`page-${currentPage}`);
                     currentDragDirection = 'next';
@@ -505,6 +556,10 @@
                     currentDragDirection = 'prev';
                 } else {
                     currentDragPage = null;
+                }
+
+                if (currentDragPage) {
+                    currentDragPage.style.display = 'block'; // Força visibilidade imediata
                 }
             }
 
