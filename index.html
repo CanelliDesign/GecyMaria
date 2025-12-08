@@ -23,13 +23,9 @@
             align-items: center;
             justify-content: center;
             -webkit-font-smoothing: antialiased;
-            touch-action: pan-y; /* Permite scroll vertical, bloqueia horizontal nativo */
-            
-            /* Bloqueia seleção de texto para não atrapalhar o arrasto */
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
+            touch-action: pan-y;
             user-select: none;
+            -webkit-user-select: none;
         }
 
         /* --- Estrutura da Cena --- */
@@ -58,19 +54,15 @@
             right: 0;
             transform-origin: left center;
             transform-style: preserve-3d;
-            background-color: #FDFBF8; /* Cor de fundo base */
+            background-color: #FDFBF8;
             border-radius: 0 10px 10px 0;
-            box-shadow: inset 20px 0 50px rgba(0,0,0,0.05), -2px 0 5px rgba(0,0,0,0.1);
+            /* Sombra sutil nas bordas para dar profundidade */
+            box-shadow: inset 5px 0 10px rgba(0,0,0,0.02), -2px 0 8px rgba(0,0,0,0.1);
             cursor: grab;
-            
-            /* Otimização Crítica para Mobile: Só anima transformações */
             will-change: transform;
-            
-            /* Por padrão, escondemos tudo para evitar crash. O JS ativa as necessárias. */
-            display: none; 
+            display: none; /* Padrão invisível para performance */
         }
         
-        /* Apenas páginas ativas recebem display block via JS, mas garantimos aqui que tenham transição */
         .page.active-page {
             display: block;
         }
@@ -79,22 +71,23 @@
             cursor: grabbing;
         }
 
-        /* Classe para ativar transição suave quando soltar a página */
+        /* Transição suave ao soltar a página */
         .page-transition {
             transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* Conteúdo interno */
+        /* Conteúdo interno - Frente */
         .page-front {
             position: absolute;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
-            -webkit-backface-visibility: hidden; /* Fix para Safari/iOS */
+            -webkit-backface-visibility: hidden;
             padding: 40px;
             overflow: hidden; 
-            background-color: #FDFBF8; /* Fundo sólido fallback */
-            background-image: linear-gradient(to right, #e3dac9 0%, #FDFBF8 10%);
+            background-color: #FDFBF8;
+            /* Textura de papel leve */
+            background-image: linear-gradient(to right, #e8e0d0 0%, #FDFBF8 5%, #FDFBF8 95%, #e8e0d0 100%);
             z-index: 2;
         }
 
@@ -108,7 +101,7 @@
             transform: rotateY(180deg);
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
-            background-image: linear-gradient(to left, #e3dac9 0%, #FDFBF8 10%);
+            background-image: linear-gradient(to left, #e8e0d0 0%, #FDFBF8 5%, #FDFBF8 95%, #e8e0d0 100%);
             border-radius: 10px 0 0 10px;
             display: flex;
             align-items: center;
@@ -118,18 +111,19 @@
             z-index: 1;
         }
 
-        /* Sombra dinâmica */
-        .page-shadow {
+        /* --- Sombra de Curvatura (O "Esticar") --- */
+        /* Esta camada cria a ilusão de dobra */
+        .page-fold-shadow {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
-            opacity: 0;
-            transition: opacity 0.2s;
+            /* Gradiente inicial transparente */
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.0) 0%, transparent);
             z-index: 10;
+            transition: opacity 0.2s; /* Suaviza quando não está arrastando */
         }
 
         /* --- MODO MOBILE --- */
@@ -144,11 +138,11 @@
             .page {
                 width: 95%;
                 right: 2.5%;
-                border-radius: 5px 15px 15px 5px;
+                border-radius: 4px 12px 12px 4px;
             }
             
             .page-back {
-                border-radius: 5px 15px 15px 5px;
+                border-radius: 12px 4px 4px 12px;
             }
 
             .page-front {
@@ -156,7 +150,7 @@
             }
         }
 
-        /* --- Estilos de Conteúdo --- */
+        /* --- Conteúdo da Capa --- */
         .capa {
             background-color: #7c2d12;
             color: white;
@@ -166,17 +160,17 @@
             align-items: center;
             text-align: center;
             border: 2px solid #551b08;
+            /* Padrão de couro sutil */
             background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239c4221' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
         }
 
         .title-fancy { font-family: 'Great Vibes', cursive; }
 
-        /* Scrollbar interna do conteúdo */
+        /* Scrollbar interna */
         .content-scroll {
             height: 100%;
             overflow-y: auto;
             padding-right: 10px;
-            /* Permite scroll suave e nativo */
             -webkit-overflow-scrolling: touch; 
         }
         .content-scroll::-webkit-scrollbar { width: 4px; }
@@ -197,7 +191,7 @@
         /* Botões de Navegação - Setas Singelas */
         .nav-btn {
             position: fixed;
-            top: 50%; /* Centralizado verticalmente por padrão (Desktop) */
+            top: 50%;
             transform: translateY(-50%);
             background: transparent;
             color: #7c2d12;
@@ -209,45 +203,31 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0.6; /* Leve transparência para ser sutil */
+            opacity: 0.6;
             transition: all 0.2s ease;
         }
-
         .nav-btn:hover { 
             opacity: 1;
-            background: rgba(124, 45, 18, 0.05); /* Feedback sutil ao passar o mouse */
+            background: rgba(124, 45, 18, 0.05);
             transform: translateY(-50%) scale(1.1); 
         }
-        
         .nav-btn:active { transform: translateY(-50%) scale(0.95); }
-
         .btn-prev { left: 10px; }
         .btn-next { right: 10px; }
-        
-        /* Desabilitado: some completamente para não atrapalhar */
         .btn-disabled { opacity: 0; pointer-events: none; } 
 
-        /* Ajustes Mobile para as setas */
         @media (max-width: 768px) {
             .nav-btn {
                 top: auto;
-                bottom: 15px; /* No rodapé para fácil acesso */
-                transform: none; /* Reset transform */
+                bottom: 15px;
+                transform: none;
                 opacity: 0.8;
                 padding: 10px;
             }
-            
-            .nav-btn:hover {
-                transform: scale(1.1);
-                background: transparent;
-            }
-            
+            .nav-btn:hover { transform: scale(1.1); background: transparent; }
             .nav-btn:active { transform: scale(0.9); }
-            
             .btn-prev { left: 20px; }
             .btn-next { right: 20px; }
-            
-            /* Seta um pouco maior para toque */
             .nav-btn svg { width: 40px; height: 40px; filter: drop-shadow(0 1px 2px rgba(255,255,255,0.8)); }
         }
 
@@ -262,49 +242,34 @@
             z-index: 300;
         }
         
-        /* Botão de Download Melhorado */
+        /* Botão de Download Redesenhado (Circular Clean) */
         .btn-download {
             position: fixed;
-            top: 15px;
-            right: 15px;
+            top: 20px;
+            right: 20px;
             z-index: 300;
-            background-color: #7c2d12;
-            color: #f7f3e8;
-            padding: 8px 16px;
-            border-radius: 4px;
+            background-color: #fff;
+            color: #7c2d12;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-            border: 1px solid #551b08;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: none;
             cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        /* Estilo "Fita" ou Etiqueta */
-        .btn-download::before {
-            content: '';
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            bottom: -5px;
-            left: -5px;
-            border: 1px dashed rgba(124, 45, 18, 0.3);
-            border-radius: 8px;
-            pointer-events: none;
-        }
-
         .btn-download:hover {
-            transform: translateY(-2px);
-            background-color: #9a3412;
-            box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+            transform: scale(1.1);
+            background-color: #7c2d12;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(124, 45, 18, 0.3);
         }
-        .btn-download:active { transform: translateY(0); }
+        
+        .btn-download:active { transform: scale(0.95); }
 
     </style>
 </head>
@@ -312,13 +277,11 @@
 
     <div id="progress" class="progress-bar" style="width: 0%"></div>
 
-    <!-- Botão de Download Melhorado -->
-    <button class="btn-download" onclick="downloadBook()" title="Baixar livro completo">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M12 12.75l-3-3m0 0l3-3m-3 3h7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.75V3" />
+    <!-- Botão de Download Novo -->
+    <button class="btn-download" onclick="downloadBook()" title="Baixar livro">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M12 3v13.5m0 0L7.5 12m4.5 4.5L16.5 12" />
         </svg>
-        <span>Baixar Livro</span>
     </button>
 
     <!-- Instruções -->
@@ -334,7 +297,7 @@
         </div>
     </div>
 
-    <!-- Controles Singelos (Setas) -->
+    <!-- Controles -->
     <button id="btn-prev" class="nav-btn btn-prev btn-disabled" aria-label="Página anterior">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8 md:w-10 md:h-10">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -407,7 +370,7 @@
                             <p class="mt-auto text-orange-200/80 text-sm animate-pulse">Arraste para abrir</p>
                         </div>
                     `;
-                    contentHTML = `<div class="page-front capa">${innerContent}<div class="page-shadow"></div></div>`;
+                    contentHTML = `<div class="page-front capa">${innerContent}<div class="page-fold-shadow"></div></div>`;
                 } else if (story.type === 'index') {
                     let indexLinks = stories.slice(2).map((s, i) => 
                         `<li onclick="goToPage(${i + 2})" class="cursor-pointer hover:text-orange-800 border-b border-stone-200 py-3 flex justify-between items-center active:bg-stone-100 transition-colors">
@@ -422,7 +385,7 @@
                             ${indexLinks}
                         </ul>
                     `;
-                    contentHTML = `<div class="page-front text-stone-800"><div class="content-scroll">${innerContent}</div><div class="page-shadow"></div></div>`;
+                    contentHTML = `<div class="page-front text-stone-800"><div class="content-scroll">${innerContent}</div><div class="page-fold-shadow"></div></div>`;
                 } else {
                     innerContent = `
                         <h2 class="text-2xl md:text-3xl font-bold text-orange-900/90 mb-6 font-serif leading-tight">${story.title}</h2>
@@ -431,12 +394,13 @@
                         </div>
                         <div class="page-number">Página ${index - 1}</div>
                     `;
-                    contentHTML = `<div class="page-front"><div class="content-scroll">${innerContent}</div><div class="page-shadow"></div></div>`;
+                    contentHTML = `<div class="page-front"><div class="content-scroll">${innerContent}</div><div class="page-fold-shadow"></div></div>`;
                 }
 
                 const backHTML = `
                     <div class="page-back">
                         <div class="opacity-10 text-stone-500 text-6xl font-serif select-none">GM</div>
+                        <div class="page-fold-shadow"></div>
                     </div>
                 `;
 
@@ -446,21 +410,22 @@
             });
 
             updateButtons();
-            // Apenas atualiza a visibilidade, não o drag ainda
             updateVisiblePages();
             setupInteractiveDrag();
         }
 
-        // Função crucial para memória: 
-        // Mostra APENAS a página atual, a próxima e a anterior.
-        // O resto ganha display:none para o navegador não tentar renderizar 3D nelas.
+        // Função de memória para Mobile
         function updateVisiblePages() {
+            const isMobile = window.innerWidth < 768;
             for (let i = 0; i < totalPages; i++) {
                 const p = document.getElementById(`page-${i}`);
                 if (!p) continue;
 
-                // Margem de segurança: 1 página antes, 1 depois
-                if (Math.abs(currentPage - i) <= 1) {
+                // Mobile: range apertado (1 atrás, 1 frente)
+                // Desktop: tudo visível (se aguentar) ou range maior
+                const range = isMobile ? 1 : 2;
+
+                if (Math.abs(currentPage - i) <= range) {
                     p.style.display = 'block';
                 } else {
                     p.style.display = 'none';
@@ -477,7 +442,6 @@
             btnNext.classList.toggle('btn-disabled', currentPage >= totalPages - 1);
         }
 
-        // Função de Download
         function downloadBook() {
             const htmlContent = document.documentElement.outerHTML;
             const blob = new Blob([htmlContent], { type: 'text/html' });
@@ -495,19 +459,17 @@
             currentPage = targetIndex;
             updateButtons();
             
-            // Re-habilita páginas para animação
+            // Reativa páginas para animação
             updateVisiblePages();
 
             for (let i = 0; i < totalPages; i++) {
                 const p = document.getElementById(`page-${i}`);
                 if (!p) continue;
                 
-                // Limpa estilos de drag
                 p.style.transform = '';
                 p.classList.remove('grabbing');
                 p.classList.add('page-transition'); 
 
-                // Estado final
                 if (i < currentPage) {
                     p.style.transform = 'rotateY(-180deg)';
                     p.style.zIndex = i; 
@@ -516,14 +478,14 @@
                     p.style.zIndex = totalPages - i;
                 }
 
-                const shadow = p.querySelector('.page-shadow');
-                if(shadow) shadow.style.opacity = '0';
+                // Limpa sombras
+                const shadows = p.querySelectorAll('.page-fold-shadow');
+                shadows.forEach(s => s.style.background = 'none');
             }
 
-            // Limpa a transição e atualiza a visibilidade para economizar memória DEPOIS da animação
             setTimeout(() => {
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('page-transition'));
-                updateVisiblePages(); // Garante que as distantes sumam
+                updateVisiblePages(); 
             }, 600);
         }
 
@@ -547,7 +509,6 @@
                 const width = window.innerWidth;
                 const isRightSide = startX > width / 2;
 
-                // Garante que a página alvo esteja visível antes de começar a arrastar
                 if (isRightSide && currentPage < totalPages) {
                     currentDragPage = document.getElementById(`page-${currentPage}`);
                     currentDragDirection = 'next';
@@ -559,7 +520,7 @@
                 }
 
                 if (currentDragPage) {
-                    currentDragPage.style.display = 'block'; // Força visibilidade imediata
+                    currentDragPage.style.display = 'block'; 
                 }
             }
 
@@ -591,22 +552,34 @@
                     const bookW = screenW > 768 ? screenW / 2 : screenW;
 
                     let rotation = 0;
-                    let opacityShadow = 0;
+                    let shadowStyle = '';
 
                     if (currentDragDirection === 'next') {
-                        const progress = Math.min(0, Math.max(-bookW, deltaX)) / bookW;
+                        // 0 a -180
+                        const progress = Math.min(0, Math.max(-bookW, deltaX)) / bookW; // 0 a -1
                         rotation = progress * 180;
-                        opacityShadow = Math.abs(progress) * 0.5;
+                        
+                        // Ilusão de Dobra (Esticar)
+                        // Quanto mais perto do meio (-90deg), mais escuro
+                        const intensity = Math.sin(Math.abs(progress) * Math.PI); 
+                        const shadowPos = Math.abs(progress) * 100;
+                        shadowStyle = `linear-gradient(90deg, transparent, rgba(0,0,0,${intensity * 0.3}) ${shadowPos}%, transparent)`;
+
                     } else {
-                        const progress = Math.min(bookW, Math.max(0, deltaX)) / bookW;
+                        // -180 a 0
+                        const progress = Math.min(bookW, Math.max(0, deltaX)) / bookW; // 0 a 1
                         rotation = -180 + (progress * 180);
-                        opacityShadow = (1 - progress) * 0.5;
+                        
+                        const intensity = Math.sin(progress * Math.PI);
+                        const shadowPos = 100 - (progress * 100);
+                        shadowStyle = `linear-gradient(90deg, transparent, rgba(0,0,0,${intensity * 0.3}) ${shadowPos}%, transparent)`;
                     }
 
                     currentDragPage.style.transform = `rotateY(${rotation}deg)`;
                     
-                    const shadow = currentDragPage.querySelector('.page-shadow');
-                    if (shadow) shadow.style.opacity = opacityShadow;
+                    // Aplica a sombra de dobra dinâmica
+                    const shadows = currentDragPage.querySelectorAll('.page-fold-shadow');
+                    shadows.forEach(s => s.style.background = shadowStyle);
                 }
             }
 
@@ -627,17 +600,19 @@
                     if (currentRot < -30) {
                         finishFlip(currentPage + 1);
                     } else {
+                        // Reverte
                         currentDragPage.style.transform = 'rotateY(0deg)';
-                        const shadow = currentDragPage.querySelector('.page-shadow');
-                        if(shadow) shadow.style.opacity = '0';
+                        const shadows = currentDragPage.querySelectorAll('.page-fold-shadow');
+                        shadows.forEach(s => s.style.background = 'none');
                     }
                 } else {
                     if (currentRot > -150) {
                         finishFlip(currentPage - 1);
                     } else {
+                        // Reverte
                         currentDragPage.style.transform = 'rotateY(-180deg)';
-                        const shadow = currentDragPage.querySelector('.page-shadow');
-                        if(shadow) shadow.style.opacity = '0';
+                        const shadows = currentDragPage.querySelectorAll('.page-fold-shadow');
+                        shadows.forEach(s => s.style.background = 'none');
                     }
                 }
                 currentDragPage = null;
